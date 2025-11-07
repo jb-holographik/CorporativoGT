@@ -1,22 +1,38 @@
-.js-badge {
-  position: fixed;
-  top: 32px;
-  left: 32px;
-  border-radius: 16px;
-  background-color: lightblue;
-  color: black;
-  padding: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  line-height: 1.2;
-  font-size: 14px;
-  cursor: pointer;
-  z-index: 10000;
-  transition: background-color .1s ease-out;
+.w-webflow-badge {
+  display: none !important;
 }
 
-.js-badge:hover {
-  background-color: rgb(228, 137, 193);
+.about-item {
+  width: 0;
+}
+
+.about-img_big {
+  /* height: 150%; */
+  height: 100%;
+}
+
+/* Positionnement du next-btn_img derrière le next-btn */
+.next-btn_img {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.next-btn_img-wrap {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+.next-btn_img-img {
+  object-fit: cover;
+  width: 100vw;
+  height: 100vh;
 }
