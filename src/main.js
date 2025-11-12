@@ -1,9 +1,12 @@
 import './styles/style.css'
 
+import { initAboutUs } from './animations/aboutus.js'
+import { initCompanies } from './animations/companies.js'
 import { initHero } from './animations/hero.js'
 import { initHomeAbout } from './animations/homeAbout.js'
 import { initLenis, getLenis } from './animations/lenis.js'
 import { initNavIndicator } from './animations/nav.js'
+import { initStickyParagraph } from './animations/stickyParagraph.js'
 
 if ('scrollRestoration' in history) {
   history.scrollRestoration = 'manual'
@@ -24,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavIndicator()
   initHero()
   initHomeAbout()
+  initStickyParagraph()
+  initAboutUs()
+  initCompanies()
 })
 
 window.addEventListener('load', () => {

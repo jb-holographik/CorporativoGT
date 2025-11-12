@@ -242,7 +242,6 @@ export function initHomeAbout() {
   // === FLIP handoff for item 13 after stop2 ends ===
   const item13 = itemsData.find((it) => it.id === 13)
   const item13El = item13?.element
-  const item13Slider = item13?.slider
   const nextImgEl =
     document.querySelector('.section_next .next-img_img') ||
     document.querySelector('.next-img_img') ||
@@ -254,9 +253,7 @@ export function initHomeAbout() {
       end: secondStepScroll + 1,
       once: true,
       onEnter: () => {
-        // Stop scroll-driven influence ONLY for this element
-        gsap.killTweensOf(item13El)
-        if (item13Slider) gsap.killTweensOf(item13Slider)
+        // Laisser les timelines ScrollTrigger de l'item 13 actives pour qu'il suive au retour
 
         // Freeze and get a fixed overlay clone (no target, manual scroll-driven steps)
         const result = freezeAndFlipToTarget({
@@ -271,80 +268,94 @@ export function initHomeAbout() {
           document.querySelector('.next-img_img')
         if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
 
-        // Step 1: over 50vh → size: 50vh (square), top: 50vh (keeps centered via xPercent:-50)
+        // Step 1 & 2: Combined scroll animation in a single timeline to avoid double-triggering
         const step1Start = secondStepScroll
         const step1End = step1Start + window.innerHeight * 0.25
-        gsap.to(overlay, {
-          width: () => window.innerHeight * 0.5,
-          height: () => window.innerHeight * 0.5,
-          top: () => window.innerHeight * 0.5,
-          ease: 'none',
-          scrollTrigger: {
-            start: step1Start,
-            end: step1End,
-            scrub: true,
-            invalidateOnRefresh: true,
-            onEnter: () => {
-              gsap.set(overlay, { autoAlpha: 1 })
-              gsap.set(item13El, { autoAlpha: 0 })
-            },
-            onLeaveBack: () => {
-              gsap.set(overlay, { autoAlpha: 0 })
-              gsap.set(item13El, { autoAlpha: 1 })
-            },
-          },
-        })
-
-        // Step 2: next 50vh → width: 100vw, height: 100vh, top: 0
         const step2Start = step1End
         const nextSectionEl = document.querySelector('.section.section_next')
+
+        // Determine step2 end point
+        let step2End
         if (nextSectionEl) {
-          gsap.to(overlay, {
-            width: () => window.innerWidth,
-            height: () => window.innerHeight * 2,
-            top: 0,
-            ease: 'none',
-            scrollTrigger: {
-              start: step2Start,
-              endTrigger: nextSectionEl,
-              end: 'top top',
-              scrub: true,
-              invalidateOnRefresh: true,
-              onLeave: () => {
-                // hide overlay when we’re past the end
-                gsap.set(overlay, { autoAlpha: 0 })
-                if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 1 })
-              },
-              onEnterBack: () => {
-                // show overlay again when scrolling back up
-                gsap.set(overlay, { autoAlpha: 1 })
-                if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
-              },
-            },
-          })
+          step2End = null // Will use endTrigger instead
         } else {
-          const step2End = step2Start + window.innerHeight * 0.75
-          gsap.to(overlay, {
+          step2End = step2Start + window.innerHeight * 0.75
+        }
+
+        // Create a single timeline for both steps
+        const scrollTriggerConfig = {
+          start: step1Start,
+          scrub: true,
+          onEnter: () => {
+            gsap.set(overlay, { autoAlpha: 1 })
+            gsap.set(item13El, { autoAlpha: 0 })
+          },
+          onLeaveBack: () => {
+            gsap.set(overlay, { autoAlpha: 0 })
+            gsap.set(item13El, { autoAlpha: 1 })
+          },
+          onLeave: () => {
+            gsap.set(overlay, { autoAlpha: 0 })
+            if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 1 })
+          },
+          onEnterBack: () => {
+            gsap.set(overlay, { autoAlpha: 1 })
+            if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
+          },
+        }
+
+        // Set appropriate end point
+        if (nextSectionEl) {
+          scrollTriggerConfig.endTrigger = nextSectionEl
+          scrollTriggerConfig.end = 'top top'
+        } else {
+          scrollTriggerConfig.end = step2End
+        }
+
+        const overlayTl = gsap.timeline({
+          scrollTrigger: scrollTriggerConfig,
+        })
+
+        // Step 1: 25vh → size: 50vh (square), top: 50vh
+        overlayTl.to(
+          overlay,
+          {
+            width: () => window.innerHeight * 0.5,
+            height: () => window.innerHeight * 0.5,
+            top: () => window.innerHeight * 0.5,
+            ease: 'none',
+          },
+          0
+        )
+
+        // Step 2: remaining 50vh → width: 100vw, height: 100vh, top: 0
+        overlayTl.to(
+          overlay,
+          {
             width: () => window.innerWidth,
             height: () => window.innerHeight * 2,
             top: 0,
             ease: 'none',
-            scrollTrigger: {
-              start: step2Start,
-              end: step2End,
-              scrub: true,
-              invalidateOnRefresh: true,
-              onLeave: () => {
-                gsap.set(overlay, { autoAlpha: 0 })
-                if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 1 })
-              },
-              onEnterBack: () => {
-                gsap.set(overlay, { autoAlpha: 1 })
-                if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
-              },
-            },
-          })
-        }
+          },
+          '25%' // Start at 25% of the total animation (after step1)
+        )
+
+        // Forcer la bonne visibilité aux bornes de la timeline, sans modifier l'animation
+        const st = overlayTl.scrollTrigger
+        overlayTl.eventCallback('onUpdate', () => {
+          const p =
+            st && typeof st.progress === 'number'
+              ? st.progress
+              : overlayTl.progress()
+          if (p <= 0.001) {
+            gsap.set(overlay, { autoAlpha: 0 })
+            gsap.set(item13El, { autoAlpha: 1 })
+            if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
+          } else if (p >= 0.999) {
+            gsap.set(overlay, { autoAlpha: 0 })
+            if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 1 })
+          }
+        })
       },
     })
   }

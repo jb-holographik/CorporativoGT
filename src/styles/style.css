@@ -36,3 +36,21 @@
   width: 100vw;
   height: 100vh;
 }
+
+.companies_item .item-eyebrow{
+  transition: opacity 1.2s cubic-bezier(0.57, 0.01, 0, 1);
+}
+
+.companies_item:hover .item-eyebrow {
+  opacity: 1;
+}
+
+/* Separator hover animation */
+.separator.is-2 {
+  width: 0%;
+  transition: width 1.2s cubic-bezier(0.57, 0.01, 0, 1);
+}
+
+.companies_item:hover .separator.is-2 {
+  width: 100%;
+}
