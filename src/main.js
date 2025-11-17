@@ -6,6 +6,7 @@ import { initHero } from './animations/hero.js'
 import { initHomeAbout } from './animations/homeAbout.js'
 import { initLenis, getLenis } from './animations/lenis.js'
 import { initNavIndicator } from './animations/nav.js'
+import { initSocialImpact } from './animations/socialImpact.js'
 import { initStickyParagraph } from './animations/stickyParagraph.js'
 
 if ('scrollRestoration' in history) {
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initStickyParagraph()
   initAboutUs()
   initCompanies()
+  initSocialImpact()
 })
 
 window.addEventListener('load', () => {
