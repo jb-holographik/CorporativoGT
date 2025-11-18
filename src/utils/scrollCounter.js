@@ -322,7 +322,12 @@ export function initScrollCounter(sectionSelector) {
   }
 
   const imageSelectorSets = [
-    ['.our-story_image-2', '.our-story_image-3', '.our-story_image-4'],
+    [
+      '.our-story_image-1',
+      '.our-story_image-2',
+      '.our-story_image-3',
+      '.our-story_image-4',
+    ],
     [
       '.our-people_image-1',
       '.our-people_image-2',

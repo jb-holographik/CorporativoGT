@@ -17,20 +17,12 @@ function initCorporateCardsAnimation() {
     return
   }
 
-  // Animation timeline pour les cartes
-  const corporateTimeline = gsap.timeline({
-    defaults: {
-      ease: 'none',
-      overwrite: 'auto',
-    },
-    scrollTrigger: {
-      trigger: corporateSection,
-      start: 'top top', // Début de la section
-      end: 'bottom bottom', // Fin de la section
-      scrub: true, // Lier l'animation au scroll
-      markers: false, // À mettre à true pour debug
-      invalidateOnRefresh: true,
-    },
+  const cardHeadings = Array.from(cards).map((card) => card.querySelector('h3'))
+
+  cardHeadings.forEach((heading) => {
+    if (heading) {
+      gsap.set(heading, { opacity: 1 })
+    }
   })
 
   // Positionner les cartes avant l'animation
@@ -49,9 +41,50 @@ function initCorporateCardsAnimation() {
     }
   })
 
+  const totalCards = cards.length
+
   // Nombre de cartes à animer (toutes sauf la première)
-  const cardsToAnimate = cards.length - 1
-  const timePerCard = 1 / cardsToAnimate // Division en parts égales
+  const cardsToAnimate = totalCards > 0 ? totalCards - 1 : 0
+
+  const getStickyTravelDistance = () => {
+    if (typeof window === 'undefined') {
+      return 1
+    }
+
+    const sectionHeight =
+      corporateSection.scrollHeight ||
+      corporateSection.getBoundingClientRect().height ||
+      0
+
+    const stickyHeight =
+      corporateStickyWrap.getBoundingClientRect().height ||
+      corporateStickyWrap.offsetHeight ||
+      window.innerHeight ||
+      0
+
+    const travel = sectionHeight - stickyHeight
+    return travel > 0 ? travel : 1
+  }
+
+  const stickyDuration = getStickyTravelDistance()
+  const movingCards = cardsToAnimate > 0 ? cardsToAnimate : 1
+  const cardDuration = stickyDuration / movingCards
+
+  // Animation timeline pour les cartes
+  const corporateTimeline = gsap.timeline({
+    defaults: {
+      ease: 'none',
+      overwrite: 'auto',
+    },
+    scrollTrigger: {
+      trigger: corporateSection,
+      start: 'top top', // Début de la section
+      end: 'bottom bottom', // Durée déterminée par la section elle-même
+      scrub: true, // Lier l'animation au scroll
+      markers: false, // À mettre à true pour debug
+      invalidateOnRefresh: true,
+    },
+  })
 
   // Animer chaque carte pour qu'elles se superposent une par une
   cards.forEach((card, index) => {
@@ -63,8 +96,8 @@ function initCorporateCardsAnimation() {
     // Position finale : chaque carte à 2em des autres
     const finalTop = index * 2
 
-    // Temps d'arrivée de cette carte dans la timeline (entre 0 et 1)
-    const startTime = (index - 1) * timePerCard
+    // Temps d'arrivée de cette carte dans la timeline
+    const startTime = (index - 1) * cardDuration
 
     corporateTimeline.fromTo(
       card,
@@ -74,10 +107,30 @@ function initCorporateCardsAnimation() {
       {
         top: `${finalTop}em`, // Position finale (2em, 4em, 6em, 8em, etc.)
         immediateRender: false,
-        duration: timePerCard,
+        duration: cardDuration,
       },
       startTime // Temps d'arrivée dans la timeline
     )
+  })
+
+  cardHeadings.forEach((heading, index) => {
+    if (!heading) {
+      return
+    }
+
+    const isLastCard = index === cards.length - 1
+    let fadeTime = null
+
+    if (cardsToAnimate > 0) {
+      if (!isLastCard) {
+        // Attendre que la carte suivante termine son animation
+        fadeTime = (index + 1) * cardDuration
+      }
+    }
+
+    if (fadeTime !== null) {
+      corporateTimeline.set(heading, { opacity: 0.2 }, fadeTime)
+    }
   })
 }
 

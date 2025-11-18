@@ -55,10 +55,14 @@
   width: 100%;
 }
 
-.corporate-sticky-wrap{
+.section.section_corporate {
+  position: relative;
+}
+
+.corporate-sticky-wrap {
   position: sticky;
   top: 0;
-  height: 100svh;
+  height: 100vh;
 }
 /* Corporate cards stacking animation */
 .corporate-cards_card {
@@ -130,4 +134,26 @@
 .section.section_our-story .our-story_content_left,
 .section.section_our-story .our-story_content_right {
   height: 100%;
+}
+
+.footer-link {
+  position: relative;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.footer-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0%;
+  height: 1px;
+  background: var(--black);
+  transition: width 0.25s ease-out;
+}
+
+.footer-link:hover::after,
+.footer-link:focus-visible::after {
+  width: 100%;
 }

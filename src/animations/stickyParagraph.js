@@ -9,8 +9,6 @@ export function initStickyParagraph() {
   const sticky = document.querySelector('.sticky-paragraph')
   if (!sticky) return
 
-  console.log('sticky div détecté')
-
   // Split le paragraphe en lignes une seule fois
   const p = sticky.querySelector('.sticky_inner p')
   let lineCount = 0
@@ -22,7 +20,6 @@ export function initStickyParagraph() {
       })
       p.setAttribute('data-split', 'lines')
       lineCount = split?.lines?.length || 0
-      console.log('SplitText lignes:', lineCount)
     } catch (e) {
       console.warn('SplitText indisponible, paragraphe non splitté.', e)
     }
@@ -32,19 +29,23 @@ export function initStickyParagraph() {
     lineCount = existingLines.length
   }
 
-  // Le sticky se termine quand le bas du conteneur atteint l'offset (48%).
+  // Le sticky se termine lorsque le conteneur a défilé de (hauteur conteneur - hauteur sticky)
   const container =
     sticky.closest('.certification-content') || sticky.parentElement || sticky
+
+  const getStickyEnd = () => {
+    const containerHeight = container?.offsetHeight || 0
+    const stickyHeight = sticky?.offsetHeight || 0
+    const distance = containerHeight - stickyHeight
+    return distance > 0 ? `+=${distance}` : 'bottom 48%'
+  }
 
   ScrollTrigger.create({
     trigger: sticky,
     start: 'top 48%',
     endTrigger: container,
-    end: 'bottom 48%',
-    onEnter: () => console.log('sticky commence'),
-    onLeave: () => console.log('sticky termine'),
-    onEnterBack: () => console.log('sticky commence'),
-    onLeaveBack: () => console.log('sticky termine'),
+    end: getStickyEnd,
+    invalidateOnRefresh: true,
   })
 
   // Assurer le même nombre de .sticky-mask que de lignes
@@ -92,8 +93,9 @@ export function initStickyParagraph() {
           trigger: sticky,
           start: 'top 48%',
           endTrigger: container,
-          end: 'bottom 48%',
+          end: getStickyEnd,
           scrub: true,
+          invalidateOnRefresh: true,
         },
       })
       masks.forEach((m, i) => {

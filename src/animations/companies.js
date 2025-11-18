@@ -1,6 +1,32 @@
 import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 import { listEasing } from '../utils/animationUtils.js'
+import { getLenis } from './lenis.js'
+
+const refreshScrollContext = (() => {
+  let rafId = null
+  const run = () => {
+    const lenis = typeof getLenis === 'function' ? getLenis() : null
+    if (lenis && typeof lenis.resize === 'function') {
+      lenis.resize()
+    }
+    if (ScrollTrigger && typeof ScrollTrigger.refresh === 'function') {
+      ScrollTrigger.refresh()
+    }
+  }
+  return () => {
+    if (typeof window === 'undefined') {
+      run()
+      return
+    }
+    if (rafId) return
+    rafId = window.requestAnimationFrame(() => {
+      rafId = null
+      run()
+    })
+  }
+})()
 
 export function initCompanies() {
   const items = document.querySelectorAll('.companies_item')
@@ -27,16 +53,20 @@ export function initCompanies() {
   }
   tagCompaniesSItems()
 
-  // Chercher les .companies_s-item et .item-image-sm dans le premier .companies_item
-  const firstItem = items[0]
-  const firstCompanyItem = firstItem.querySelector('.companies_s-item')
-  if (firstCompanyItem) {
-    firstCompanyItem.classList.add('is-active')
-  }
-  const firstImageSm = firstItem.querySelector('.item-image-sm')
-  if (firstImageSm) {
-    firstImageSm.classList.add('is-active')
-  }
+  // S'assurer que chaque companies_item a un .companies_s-item actif par défaut
+  items.forEach((item) => {
+    const companiesList = item.querySelector('.companies_s-list')
+    if (!companiesList) return
+    const initialCompanyItem = companiesList.querySelector(
+      '.companies_s-item:not([data-clone="true"])'
+    )
+    if (
+      initialCompanyItem &&
+      !initialCompanyItem.classList.contains('is-active')
+    ) {
+      initialCompanyItem.classList.add('is-active')
+    }
+  })
 
   // Ajouter des listeners de clic sur les .item-image-sm
   const imageSmElements = document.querySelectorAll('.item-image-sm')
@@ -230,8 +260,10 @@ export function initCompanies() {
         onComplete: () => {
           isAnimating = false
           expanded = !expanded
+          refreshScrollContext()
         },
       })
+      refreshScrollContext()
 
       // S'assurer que le container ne déborde pas pendant l'animation
       tl.set(item, { overflow: 'hidden' }, 0)
