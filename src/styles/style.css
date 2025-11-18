@@ -94,3 +94,40 @@
 .corporate-content{
   height: 40em;
 }
+
+/* --- Ajustements Our Story --- */
+.section.section_our-story .our-story {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: stretch;
+}
+
+.section.section_our-story .our-story_content {
+  height: 100%;
+  min-height: 0;
+  align-content: stretch;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.section.section_our-story .our-people_content_center {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  align-self: stretch;
+}
+
+.section.section_our-story .our-story_content_center {
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.section.section_our-story .our-story_content_left,
+.section.section_our-story .our-story_content_right {
+  height: 100%;
+}

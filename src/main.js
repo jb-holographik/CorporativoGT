@@ -1,6 +1,7 @@
 import './styles/style.css'
 
 import { initAboutUs } from './animations/aboutus.js'
+import { initCareers } from './animations/careers.js'
 import { initCompanies } from './animations/companies.js'
 import { initHero } from './animations/hero.js'
 import { initHomeAbout } from './animations/homeAbout.js'
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initHero()
   initHomeAbout()
   initStickyParagraph()
+  initCareers()
   initAboutUs()
   initCompanies()
   initSocialImpact()

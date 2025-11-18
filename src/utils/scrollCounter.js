@@ -9,6 +9,7 @@ gsap.registerPlugin(ScrollTrigger)
  * - .our-story (conteneur sticky)
  * - .counter-right_slider, .counter-center_slider, .counter-left_slider (sliders du compteur)
  * - .our-story_image-2, .our-story_image-3, .our-story_image-4 (images à animer)
+ *   ou .our-people_image-1 à .our-people_image-4 (nouveau naming)
  * - .our-story_content_left .p-small et .our-story_content_right .p-small (paragraphes texte)
  *
  * @param {string} sectionSelector - Sélecteur CSS de la section principale (ex: '.section.section_our-story')
@@ -286,8 +287,7 @@ export function initScrollCounter(sectionSelector) {
   // Fonction réutilisable pour animer les images avec scale 0 -> 1
   // startProgress: moment de départ (0 = début, 1 = fin)
   // endProgress: moment de fin (0 = début, 1 = fin)
-  const animateImage = (selector, startProgress = 0, endProgress = 1) => {
-    const image = section.querySelector(selector)
+  const animateImage = (image, startProgress = 0, endProgress = 1) => {
     if (!image) return
 
     // Créer une timeline séparée pour cette image
@@ -321,9 +321,38 @@ export function initScrollCounter(sectionSelector) {
     )
   }
 
-  // Animer les trois images avec leurs moments de départ et fin
-  // Format: animateImage(selector, startProgress, endProgress)
-  animateImage('.our-story_image-2', 0, 0.33) // De 0% à 33%
-  animateImage('.our-story_image-3', 0.33, 0.66) // De 33% à 66%
-  animateImage('.our-story_image-4', 0.66, 1) // De 66% à 100%
+  const imageSelectorSets = [
+    ['.our-story_image-2', '.our-story_image-3', '.our-story_image-4'],
+    [
+      '.our-people_image-1',
+      '.our-people_image-2',
+      '.our-people_image-3',
+      '.our-people_image-4',
+    ],
+  ]
+
+  const imagesToAnimate =
+    imageSelectorSets
+      .map((selectors) =>
+        selectors
+          .map((sel) => section.querySelector(sel))
+          .filter((img) => img instanceof HTMLElement)
+      )
+      .find((set) => set.length > 0) || []
+
+  if (imagesToAnimate.length) {
+    const [staticImage, ...animatedImages] = imagesToAnimate
+    if (staticImage) {
+      gsap.set(staticImage, { scale: 1 })
+    }
+    if (!animatedImages.length) {
+      return
+    }
+    const segment = 1 / animatedImages.length
+    animatedImages.forEach((image, index) => {
+      const start = segment * index
+      const end = segment * (index + 1)
+      animateImage(image, start, end)
+    })
+  }
 }
