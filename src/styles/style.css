@@ -157,3 +157,27 @@
 .footer-link:focus-visible::after {
   width: 100%;
 }
+
+/* Page transition overlay overrides */
+.transition__inner {
+  width: 22.75em;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.transition__inner__img {
+  object-fit: cover;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
