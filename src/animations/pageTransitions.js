@@ -37,8 +37,6 @@ let hasBootstrapped = false
 let listenersAttached = false
 let transitionsReady = false
 let skipNextAfterEnterHydration = false
-let transitionElementsCache = null
-let transitionIntroPromise = null
 
 export function initPageTransitions() {
   if (!hasBrowserEnv || hasBootstrapped) return
@@ -66,9 +64,7 @@ function ensureManualScrollRestoration() {
 function attachLoadListener() {
   if (listenersAttached || typeof window === 'undefined') return
   listenersAttached = true
-  window.addEventListener('load', () => {
-    requestAnimationFrame(() => forceScrollTopNow())
-  })
+  window.addEventListener('load', () => {})
 }
 
 function hydratePage({ reason, next } = {}) {
@@ -76,12 +72,12 @@ function hydratePage({ reason, next } = {}) {
   syncCurrentNavLink(next)
   unlockNavIndicator()
   resumeSmoothScroll()
-  forceScrollTopNow()
-  requestAnimationFrame(() => forceScrollTopNow())
   runAnimationModules(reason)
   requestAnimationFrame(() => {
     ScrollTrigger.refresh()
-    deactivateTransitionOverlay()
+    requestAnimationFrame(() => {
+      ScrollTrigger.refresh()
+    })
   })
 }
 
@@ -89,6 +85,7 @@ function resumeSmoothScroll() {
   const lenis = initLenis()
   if (lenis && typeof lenis.start === 'function') {
     lenis.start()
+    resetScrollTopImmediate()
   }
   return lenis
 }
@@ -129,7 +126,7 @@ function initBarbaRouter() {
   barba.init({
     preventRunning: true,
     timeout: 7000,
-    transitions: [createHeroImageTransition()],
+    transitions: [createFadeTransition()],
   })
 
   transitionsReady = true
@@ -143,15 +140,14 @@ function hasBarbaMarkup() {
 }
 
 function registerBarbaHooks() {
-  barba.hooks.beforeLeave((data) => {
+  barba.hooks.beforeLeave(() => {
     setNavIndicatorTransitionState(true)
     pauseSmoothScroll()
-    killScrollTriggers()
-    transitionIntroPromise = playTransitionIntro(data)
+    disableScrollTriggersKeepState()
   })
 
   barba.hooks.afterLeave(() => {
-    forceScrollTopNow()
+    killScrollTriggers()
   })
 
   barba.hooks.beforeEnter(({ next }) => {
@@ -159,37 +155,20 @@ function registerBarbaHooks() {
   })
 
   barba.hooks.afterEnter((data) => {
-    const finishHydration = () =>
-      hydratePage({ reason: 'barba', next: data?.next })
-
     if (skipNextAfterEnterHydration) {
       skipNextAfterEnterHydration = false
-      transitionIntroPromise = null
-      deactivateTransitionOverlay()
-      finishHydration()
       return
     }
-
-    const waitForIntro = transitionIntroPromise
-      ? transitionIntroPromise.catch((error) => {
-          console.warn('Transition intro interrompue.', error)
-        })
-      : Promise.resolve()
-
-    waitForIntro
-      .then(() => playTransitionOutro(data?.next))
-      .catch((error) => {
-        console.warn('Transition outro interrompue.', error)
-      })
-      .finally(() => {
-        transitionIntroPromise = null
-        finishHydration()
-      })
+    hydratePage({ reason: 'barba', next: data?.next })
   })
 }
 
 function killScrollTriggers() {
   ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+}
+
+function disableScrollTriggersKeepState() {
+  ScrollTrigger.getAll().forEach((trigger) => trigger.disable(false))
 }
 
 function updateBodyNamespace(next) {
@@ -250,487 +229,425 @@ function normalizePath(path) {
   return trimmed || '/'
 }
 
-function forceScrollTopNow() {
-  if (!hasBrowserEnv) return
-  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-  const lenis = getLenis()
-  if (lenis && typeof lenis.scrollTo === 'function') {
-    lenis.scrollTo(0, { duration: 0 })
-  }
-}
-
-function getTransitionElements() {
-  if (!hasBrowserEnv) return null
-  if (
-    transitionElementsCache &&
-    document.contains(transitionElementsCache.overlay)
-  ) {
-    return transitionElementsCache
-  }
-
-  const overlay = document.querySelector('.transition')
-  const inner = overlay?.querySelector('.transition__inner') || null
-  const images = overlay
-    ? Array.from(overlay.querySelectorAll('.transition__inner__img'))
-    : []
-
-  if (!overlay || !inner || images.length === 0) {
-    transitionElementsCache = null
-    return null
-  }
-
-  transitionElementsCache = { overlay, inner, images }
-  return transitionElementsCache
-}
-
-function activateTransitionOverlay(pageId) {
-  const refs = getTransitionElements()
-  if (!refs) return null
-
-  const { overlay, inner, images } = refs
-
-  console.log('[activateTransitionOverlay] Début activation, pageId:', pageId)
-  console.log(
-    '[activateTransitionOverlay] Inner style AVANT tout:',
-    inner.getAttribute('style')
-  )
-
-  overlay.style.display = 'flex'
-
-  let imageMatched = false
-  let activeImage = null
-  images.forEach((img, index) => {
-    const shouldShow =
-      (!!pageId && img.dataset.page === pageId) || (!pageId && index === 0)
-    if (shouldShow) {
-      img.style.display = 'block'
-      imageMatched = true
-      activeImage = img
-    } else {
-      img.style.display = 'none'
-    }
-  })
-
-  if (!imageMatched && images.length > 0) {
-    images[0].style.display = 'block'
-    activeImage = images[0]
-  }
-
-  refs.activeImage = activeImage
-
-  console.log('[activateTransitionOverlay] Avant clearProps')
-  gsap.set(inner, { clearProps: 'all' })
-  console.log(
-    '[activateTransitionOverlay] Après clearProps, style:',
-    inner.getAttribute('style')
-  )
-
-  gsap.set(inner, {
-    width: '22.75em',
-    height: 0,
-  })
-
-  console.log(
-    '[activateTransitionOverlay] Après set width/height, avant centerInnerForOverlay'
-  )
-  centerInnerForOverlay(inner)
-
-  if (activeImage) {
-    gsap.set(activeImage, { width: '22.75em', height: 0 })
-  }
-  return refs
-}
-
-function deactivateTransitionOverlay() {
-  const refs = getTransitionElements()
-  if (!refs) return
-  const { overlay, inner, images } = refs
-  refs.activeImage = null
-  overlay.style.display = 'none'
-  images.forEach((img) => {
-    img.style.display = 'none'
-    gsap.set(img, { width: '', height: '' })
-  })
-  gsap.set(inner, { width: '22.75em', height: 0 })
-  centerInnerForOverlay(inner)
-}
-
-function centerInnerForOverlay(inner) {
-  if (!inner || !hasBrowserEnv) return
-
-  const beforeClear = {
-    position: window.getComputedStyle(inner).position,
-    margin: window.getComputedStyle(inner).margin,
-    width: window.getComputedStyle(inner).width,
-    inlineStyle: inner.getAttribute('style'),
-  }
-
-  console.log('[centerInnerForOverlay] AVANT clearProps:', beforeClear)
-
-  gsap.set(inner, {
-    clearProps: 'all',
-  })
-
-  const afterClear = {
-    position: window.getComputedStyle(inner).position,
-    margin: window.getComputedStyle(inner).margin,
-    width: window.getComputedStyle(inner).width,
-    inlineStyle: inner.getAttribute('style'),
-  }
-
-  console.log('[centerInnerForOverlay] APRÈS clearProps:', afterClear)
-
-  gsap.set(inner, {
-    position: 'relative',
-    margin: '0 auto',
-    top: 'auto',
-    left: 'auto',
-    xPercent: 0,
-    yPercent: 0,
-  })
-
-  const rectAfterCenter = inner.getBoundingClientRect()
-  const finalComputed = {
-    position: window.getComputedStyle(inner).position,
-    margin: window.getComputedStyle(inner).margin,
-    width: window.getComputedStyle(inner).width,
-    inlineStyle: inner.getAttribute('style'),
-  }
-
-  console.log('[centerInnerForOverlay] APRÈS gsap.set final:', finalComputed)
-  console.log('[centerInnerForOverlay] Rect final:', {
-    rectLeft: rectAfterCenter.left,
-    rectWidth: rectAfterCenter.width,
-    viewportWidth: window.innerWidth,
-    expectedCenter: window.innerWidth / 2,
-    actualCenter: rectAfterCenter.left + rectAfterCenter.width / 2,
-  })
-}
-
-function convertInnerToFixed(inner) {
-  if (!inner || !hasBrowserEnv) return
-  const rect = inner.getBoundingClientRect()
-  const computedStyle = window.getComputedStyle(inner)
-
-  console.log('[convertInnerToFixed] État AVANT conversion:', {
-    position: computedStyle.position,
-    margin: computedStyle.margin,
-    left: computedStyle.left,
-    top: computedStyle.top,
-    xPercent: computedStyle.transform,
-    rectLeft: rect.left,
-    rectTop: rect.top,
-    rectWidth: rect.width,
-    rectHeight: rect.height,
-    calculatedCenterX: rect.left + rect.width / 2,
-    viewportWidth: window.innerWidth,
-  })
-
-  gsap.set(inner, {
-    position: 'fixed',
-    top: rect.top,
-    left: rect.left + rect.width / 2,
-    xPercent: -50,
-    yPercent: 0,
-    margin: 0,
-  })
-
-  const rectAfter = inner.getBoundingClientRect()
-  console.log('[convertInnerToFixed] État APRÈS conversion:', {
-    position: window.getComputedStyle(inner).position,
-    rectLeft: rectAfter.left,
-    rectTop: rectAfter.top,
-    rectWidth: rectAfter.width,
-    rectHeight: rectAfter.height,
-  })
-}
-
-function getHeroViewportOffset(next) {
-  if (!hasBrowserEnv || !next || !next.container) return null
-  const measurement = ensureContainerMeasurable(next.container)
-  if (!measurement) return null
-
-  const hero = measurement.element.querySelector('.hero-img')
-  if (!hero) {
-    measurement.cleanup?.()
-    return null
-  }
-
-  const rect = hero.getBoundingClientRect()
-  measurement.cleanup?.()
-
-  if (!rect || Number.isNaN(rect.top)) return null
-  return rect.top
-}
-
-function ensureContainerMeasurable(container) {
-  if (!container || !hasBrowserEnv) return null
-
-  const wrapper =
-    document.querySelector('[data-barba="wrapper"]') || document.body
-
-  let element = container
-  let appendedClone = null
-  let restores = null
-
-  if (!element.isConnected) {
-    const clone = container.cloneNode(true)
-    clone.style.visibility = 'hidden'
-    clone.style.pointerEvents = 'none'
-    clone.style.position = 'absolute'
-    clone.style.top = '0'
-    clone.style.left = '0'
-    clone.style.right = '0'
-    clone.style.width = '100%'
-    wrapper.appendChild(clone)
-    appendedClone = clone
-    element = clone
-  }
-
-  const computed = window.getComputedStyle(element)
-  const hidden =
-    computed.display === 'none' ||
-    computed.visibility === 'hidden' ||
-    computed.opacity === '0'
-
-  if (hidden) {
-    const previous = {
-      visibility: element.style.visibility,
-      display: element.style.display,
-      position: element.style.position,
-      pointerEvents: element.style.pointerEvents,
-      top: element.style.top,
-      left: element.style.left,
-      right: element.style.right,
-      bottom: element.style.bottom,
-      width: element.style.width,
-    }
-
-    element.style.visibility = 'hidden'
-    element.style.display = 'block'
-    element.style.position = 'absolute'
-    element.style.pointerEvents = 'none'
-    element.style.top = '0'
-    element.style.left = '0'
-    element.style.right = '0'
-    element.style.bottom = 'auto'
-    element.style.width = '100%'
-
-    restores = () => {
-      Object.entries(previous).forEach(([prop, value]) => {
-        element.style[prop] = value || ''
-      })
-    }
-  }
-
+function createFadeTransition() {
   return {
-    element,
-    cleanup: () => {
-      restores?.()
-      if (appendedClone) {
-        appendedClone.remove()
-      }
+    name: 'transition-overlay',
+    async leave({ next }) {
+      await ensureNextIsReady(next)
+      const { transitionEl, clipRect } = getOrCreateTransitionElementsFromDOM()
+      const { start } = computeClipTargets()
+      gsap.set(transitionEl, {
+        display: 'none',
+        width: '100vw',
+        height: '100vh',
+        justifyContent: 'center',
+        alignItems: 'center',
+      })
+      gsap.set(clipRect, { attr: start })
     },
-  }
-}
+    async enter({ next }) {
+      if (!next || !next.container) return
 
-function resolveTargetNamespace(data) {
-  const namespace = data?.next?.namespace
-  if (namespace) return namespace
+      const wrapper = document.querySelector('[data-barba="wrapper"]')
+      if (!wrapper) return
 
-  const fromUrl =
-    inferNamespaceFromPath(data?.next?.url?.path) ||
-    inferNamespaceFromHref(data?.next?.url?.href)
-  if (fromUrl) return fromUrl
+      const { transitionEl, transitionInner, clipRect, clipId, defsSvg } =
+        getOrCreateTransitionElementsFromDOM(wrapper)
+      const { start, mid, end, viewportW, viewportH } = computeClipTargets()
 
-  if (data?.trigger) {
-    const triggerHref =
-      data.trigger.getAttribute('href') ||
-      data.trigger.getAttribute('data-href') ||
-      data.trigger.dataset.href
-    const triggerNs = inferNamespaceFromHref(triggerHref)
-    if (triggerNs) return triggerNs
-  }
+      const nextContainer = next.container
+      const pageWrap =
+        nextContainer.querySelector('.page-wrap') || nextContainer || wrapper
+      const pageContent =
+        pageWrap.querySelector('.page-content') || nextContainer || pageWrap
 
-  return null
-}
+      // Préparer un clone du hero de la page cible
+      const heroImg = pageContent.querySelector('.section_hero .hero-img_img')
+      const heroRect = heroImg ? heroImg.getBoundingClientRect() : null
+      const rootFontSize =
+        parseFloat(
+          window.getComputedStyle(document.documentElement).fontSize || '16'
+        ) || 16
+      const cloneWpx = 40 * rootFontSize
+      const cloneHpx = 25 * rootFontSize
+      let heroClone = null
+      if (heroImg && heroRect) {
+        heroClone = heroImg.cloneNode(true)
+        const cloneStyle = heroClone.style
+        cloneStyle.position = 'absolute'
+        cloneStyle.top = '50%'
+        cloneStyle.left = '50%'
+        cloneStyle.transformOrigin = '50% 50%'
+        cloneStyle.objectFit = 'cover'
+        cloneStyle.pointerEvents = 'none'
+        cloneStyle.zIndex = '2'
+        cloneStyle.maxWidth = 'none'
+        cloneStyle.maxHeight = 'none'
+        cloneStyle.minWidth = `${cloneWpx}px`
+        cloneStyle.minHeight = `${cloneHpx}px`
+        cloneStyle.setProperty('width', `${cloneWpx}px`, 'important')
+        cloneStyle.setProperty('height', `${cloneHpx}px`, 'important')
+        heroClone.dataset.heroDistanceTop = `${heroRect.top || 0}`
+        heroClone.dataset.heroHeight = `${heroRect.height || 0}`
+        gsap.set(heroClone, { xPercent: -50, yPercent: -50 })
+      }
 
-function inferNamespaceFromPath(path) {
-  if (!path) return null
-  try {
-    const url = new URL(
-      path,
-      hasBrowserEnv ? window.location.origin : 'https://placeholder.local'
-    )
-    return formatNamespaceString(url.pathname)
-  } catch (error) {
-    return formatNamespaceString(path)
-  }
-}
+      const eyebrows = Array.from(
+        pageContent.querySelectorAll('.hero_content .eyebrow-wrap')
+      )
+      if (eyebrows.length) {
+        gsap.set(eyebrows, { yPercent: 400 })
+      }
 
-function inferNamespaceFromHref(href) {
-  if (!href) return null
-  try {
-    const url = new URL(
-      href,
-      hasBrowserEnv ? window.location.origin : 'https://placeholder.local'
-    )
-    return formatNamespaceString(url.pathname)
-  } catch (error) {
-    return formatNamespaceString(href)
-  }
-}
+      const placeholder = document.createElement('div')
+      pageContent.parentNode.insertBefore(placeholder, pageContent)
 
-function formatNamespaceString(value) {
-  if (!value) return null
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  const withoutHash = trimmed.split('#')[0]
-  const withoutQuery = withoutHash.split('?')[0]
-  const noLeadingSlash = withoutQuery.replace(/^\//, '')
-  const noExtension = noLeadingSlash.replace(/\.html?$/i, '')
-  if (!noExtension || noExtension === 'index') return 'home'
-  return noExtension
-}
+      if (!transitionEl.contains(transitionInner)) {
+        transitionEl.appendChild(transitionInner)
+      }
+      if (defsSvg) {
+        defsSvg.setAttribute('width', `${viewportW}`)
+        defsSvg.setAttribute('height', `${viewportH}`)
+        defsSvg.setAttribute('viewBox', `0 0 ${viewportW} ${viewportH}`)
+      }
 
-function playTransitionIntro(data) {
-  const pageId = resolveTargetNamespace(data)
-
-  console.log('[playTransitionIntro] Début phase 1, pageId:', pageId)
-
-  const refs = activateTransitionOverlay(pageId)
-  const currentContainer = data?.current?.container || null
-
-  if (!refs) {
-    console.log('[playTransitionIntro] Pas de refs overlay, fallback fade')
-    if (!currentContainer) return Promise.resolve()
-    return gsap
-      .to(currentContainer, {
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.out',
+      const maskWrapper = document.createElement('div')
+      maskWrapper.className = 'transition_mask-wrapper'
+      Object.assign(maskWrapper.style, {
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        clipPath: `url(#${clipId})`,
+        WebkitClipPath: `url(#${clipId})`,
       })
-      .then(() => {})
-  }
 
-  const { inner, activeImage } = refs
+      maskWrapper.appendChild(pageContent)
+      if (heroClone) {
+        maskWrapper.appendChild(heroClone)
+      }
+      transitionInner.appendChild(maskWrapper)
 
-  console.log('[playTransitionIntro] Overlay activé, centrage...')
-  centerInnerForOverlay(inner)
+      // Debug positioning
+      const logDebug = () => {
+        const el = heroClone || pageContent
+        const rect = el?.getBoundingClientRect()
+        const style = el ? window.getComputedStyle(el) : null
+        const clipAttr = clipRect
+          ? {
+              x: clipRect.getAttribute('x'),
+              y: clipRect.getAttribute('y'),
+              w: clipRect.getAttribute('width'),
+              h: clipRect.getAttribute('height'),
+            }
+          : null
+        console.log('[barba-mask-debug]', {
+          tag: el?.tagName,
+          rect,
+          style: style
+            ? {
+                top: style.top,
+                left: style.left,
+                width: style.width,
+                height: style.height,
+                transform: style.transform,
+              }
+            : null,
+          clipAttr,
+          parent: el?.parentElement?.className,
+        })
+      }
 
-  return new Promise((resolve) => {
-    const tl = gsap.timeline({
-      defaults: { ease: listEasing },
-      onComplete: () => {
-        console.log('[playTransitionIntro] Phase 1 terminée')
-        resolve()
-      },
-    })
+      gsap.set(pageContent, {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        minWidth: '100vw',
+        minHeight: '100vh',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        flex: '0 0 auto',
+        boxSizing: 'border-box',
+        pointerEvents: 'none',
+        opacity: 0,
+      })
 
-    tl.set(inner, { width: '22.75em', height: 0 })
+      gsap.set(transitionEl, {
+        display: 'flex',
+        width: '100vw',
+        height: '100vh',
+        justifyContent: 'center',
+        alignItems: 'center',
+      })
+      gsap.set(clipRect, { attr: start })
 
-    tl.to(inner, {
-      width: '39.75em',
-      height: '15em',
-      duration: 0.8,
-    })
+      await gsap.to(clipRect, {
+        attr: mid,
+        duration: 0.8,
+        ease: listEasing,
+        onStart: () => gsap.set(pageContent, { opacity: 1 }),
+      })
 
-    if (activeImage) {
-      tl.to(
-        activeImage,
-        {
-          width: '39.75em',
-          height: '24.875em',
-          duration: 0.8,
-        },
-        '<'
-      )
-    }
-  })
-}
+      if (heroClone) {
+        const heroRectNow = heroImg?.getBoundingClientRect()
+        const centerX = heroRectNow
+          ? heroRectNow.left + heroRectNow.width / 2
+          : viewportW / 2
+        const centerY = heroRectNow
+          ? heroRectNow.top + heroRectNow.height / 2
+          : viewportH / 2
+        const targetX = centerX - viewportW / 2
+        const targetY = centerY - viewportH / 2
+        const targetW = heroRectNow ? `${heroRectNow.width}px` : '100vw'
+        const targetH = heroRectNow ? `${heroRectNow.height}px` : '100vh'
 
-async function playTransitionOutro(next) {
-  const refs = getTransitionElements()
-  if (!refs) {
-    return
-  }
+        await Promise.all(
+          [
+            gsap.to(clipRect, {
+              attr: end,
+              duration: 0.8,
+              ease: listEasing,
+            }),
+            gsap.to(heroClone, {
+              width: targetW,
+              height: targetH,
+              xPercent: -50,
+              yPercent: -50,
+              x: targetX,
+              y: targetY,
+              duration: 0.8,
+              ease: listEasing,
+              onUpdate: logDebug,
+            }),
+            eyebrows.length
+              ? gsap.to(eyebrows, {
+                  yPercent: 0,
+                  duration: 0.8,
+                  ease: listEasing,
+                })
+              : null,
+          ].filter(Boolean)
+        )
+      } else {
+        await Promise.all(
+          [
+            gsap.to(clipRect, {
+              attr: end,
+              duration: 0.8,
+              ease: listEasing,
+            }),
+            eyebrows.length
+              ? gsap.to(eyebrows, {
+                  yPercent: 0,
+                  duration: 0.8,
+                  ease: listEasing,
+                })
+              : null,
+          ].filter(Boolean)
+        )
+      }
 
-  console.log('[playTransitionOutro] Début phase 2, next:', !!next)
+      document
+        .querySelectorAll('[data-barba="container"]')
+        .forEach((container) => {
+          if (container !== nextContainer) container.remove()
+        })
 
-  const { inner, activeImage } = refs
-
-  console.log('[playTransitionOutro] Avant convertInnerToFixed')
-  convertInnerToFixed(inner)
-  console.log('[playTransitionOutro] Après convertInnerToFixed')
-
-  await waitForNextFrame()
-
-  const heroTop = getHeroViewportOffset(next)
-  const finalTop =
-    typeof heroTop === 'number' && Number.isFinite(heroTop) ? heroTop : 0
-
-  console.log('[playTransitionOutro] Hero offset calculé:', {
-    heroTop,
-    finalTop,
-    hasNext: !!next,
-    hasContainer: !!next?.container,
-  })
-
-  await new Promise((resolve) => {
-    const tl = gsap.timeline({
-      defaults: { ease: listEasing },
-      onComplete: () => {
-        console.log('[playTransitionOutro] Animation phase 2 terminée')
-        deactivateTransitionOverlay()
-        resolve()
-      },
-    })
-
-    tl.to(inner, {
-      width: '100%',
-      height: '100%',
-      duration: 0.8,
-      top: finalTop,
-      left: '50%',
-      xPercent: -50,
-      yPercent: 0,
-    })
-
-    if (activeImage) {
-      tl.to(
-        activeImage,
-        {
-          width: 'calc(100% + 5em)',
-          height: '100%',
-          left: 0,
-          xPercent: 0,
-          duration: 0.8,
-        },
-        '<'
-      )
-    }
-  })
-}
-
-function waitForNextFrame() {
-  if (!hasBrowserEnv) return Promise.resolve()
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve))
-  })
-}
-
-function createHeroImageTransition() {
-  return {
-    name: 'hero-image-transition',
-    async leave() {
-      if (transitionIntroPromise) {
-        try {
-          await transitionIntroPromise
-        } catch (error) {
-          console.warn('Transition intro interrompue.', error)
+      placeholder.replaceWith(pageContent)
+      if (hasBrowserEnv) {
+        const lenis = getLenis()
+        if (lenis && typeof lenis.scrollTo === 'function') {
+          lenis.scrollTo(0, { duration: 0, immediate: true })
+        } else {
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
         }
       }
+      gsap.set(pageContent, {
+        position: '',
+        top: '',
+        left: '',
+        width: '',
+        height: '',
+        opacity: '',
+        pointerEvents: '',
+        minWidth: '',
+        minHeight: '',
+        maxWidth: '',
+        maxHeight: '',
+        flex: '',
+        boxSizing: '',
+      })
+
+      gsap.set(clipRect, { attr: start })
+      gsap.set(transitionEl, { display: 'none', width: '', height: '' })
+      if (maskWrapper && maskWrapper.parentNode) {
+        maskWrapper.parentNode.removeChild(maskWrapper)
+      }
+      if (heroClone && heroClone.parentNode) {
+        heroClone.parentNode.removeChild(heroClone)
+      }
+      logDebug()
     },
-    enter: () => Promise.resolve(),
+  }
+}
+
+async function ensureNextIsReady(next) {
+  if (!next) return
+  if (next.container) return next.container
+
+  // Poll légèrement pour laisser le temps à Barba de construire le container
+  const maxTries = 20
+  for (let i = 0; i < maxTries; i++) {
+    if (next.container) return next.container
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+  }
+  return next.container
+}
+
+function getOrCreateTransitionElementsFromDOM(wrapper) {
+  const scope =
+    wrapper || document.querySelector('[data-barba="wrapper"]') || document.body
+  let pageWrap =
+    scope.querySelector('.page-wrap') || scope.querySelector('main.page-wrap')
+
+  if (!pageWrap) pageWrap = scope
+
+  let transitionEl = pageWrap.querySelector('.transition')
+  let transitionInner =
+    transitionEl && transitionEl.querySelector('.transition__inner')
+  let clipRect = null
+  let defsSvg = null
+  const clipId = 'transition-clip'
+
+  if (!transitionEl) {
+    transitionEl = document.createElement('div')
+    transitionEl.className = 'transition'
+    Object.assign(transitionEl.style, {
+      position: 'fixed',
+      inset: 0,
+      zIndex: 9999,
+      display: 'none',
+      justifyContent: 'center',
+      alignItems: 'center',
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      backgroundColor: 'var(--off-white, #ecedee)',
+    })
+    pageWrap.insertBefore(transitionEl, pageWrap.firstChild)
+  }
+
+  if (!transitionInner || transitionInner.dataset.type !== 'mask-container') {
+    const svgNS = 'http://www.w3.org/2000/svg'
+    transitionInner = document.createElement('div')
+    transitionInner.classList.add('transition__inner')
+    transitionInner.dataset.type = 'mask-container'
+    Object.assign(transitionInner.style, {
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      pointerEvents: 'none',
+    })
+
+    defsSvg = document.createElementNS(svgNS, 'svg')
+    defsSvg.dataset.maskDefs = 'true'
+    defsSvg.setAttribute('width', '100%')
+    defsSvg.setAttribute('height', '100%')
+    defsSvg.setAttribute('viewBox', '0 0 100 100')
+    defsSvg.setAttribute(
+      'style',
+      'position:absolute; top:0; left:0; pointer-events:none;'
+    )
+
+    const defs = document.createElementNS(svgNS, 'defs')
+    const clipPath = document.createElementNS(svgNS, 'clipPath')
+    clipPath.setAttribute('id', clipId)
+    clipPath.setAttribute('clipPathUnits', 'userSpaceOnUse')
+
+    clipRect = document.createElementNS(svgNS, 'rect')
+    clipRect.setAttribute('id', 'transition-clip-rect')
+    clipRect.setAttribute('x', '0')
+    clipRect.setAttribute('y', '0')
+    clipRect.setAttribute('width', '0')
+    clipRect.setAttribute('height', '0')
+
+    clipPath.appendChild(clipRect)
+    defs.appendChild(clipPath)
+    defsSvg.appendChild(defs)
+    transitionInner.appendChild(defsSvg)
+
+    transitionEl.appendChild(transitionInner)
+  } else {
+    defsSvg = transitionInner.querySelector('[data-mask-defs="true"]')
+    clipRect = transitionInner.querySelector('#transition-clip-rect')
+  }
+
+  return { transitionEl, transitionInner, clipRect, clipId, defsSvg }
+}
+
+function resetScrollTopImmediate() {
+  if (!hasBrowserEnv) return
+  const lenis = getLenis()
+  if (lenis && typeof lenis.scrollTo === 'function') {
+    lenis.scrollTo(0, { duration: 0, immediate: true })
+  }
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  document.documentElement.scrollTop = 0
+  document.body.scrollTop = 0
+}
+
+function computeClipTargets() {
+  // Clip en userSpaceOnUse, valeurs en px pour correspondre aux em souhaités
+  const fallback = () => {
+    const vw = 1440
+    const vh = 900
+    const midW = 0.2 * vw
+    const midH = 0.1333 * vh
+    return {
+      start: { width: 0, height: 0, x: vw / 2, y: vh / 2 },
+      mid: {
+        width: midW,
+        height: midH,
+        x: (vw - midW) / 2,
+        y: (vh - midH) / 2,
+      },
+      end: { width: vw, height: vh, x: 0, y: 0 },
+      viewportW: vw,
+      viewportH: vh,
+    }
+  }
+
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return fallback()
+  }
+
+  const rootFontSize =
+    parseFloat(
+      window.getComputedStyle(document.documentElement).fontSize || '16'
+    ) || 16
+  const emToPx = (em) => em * rootFontSize
+
+  const vw = window.innerWidth || 1440
+  const vh = window.innerHeight || 900
+
+  const midW = emToPx(22.5)
+  const midH = emToPx(15)
+
+  return {
+    start: { width: 0, height: 0, x: vw / 2, y: vh / 2 },
+    mid: {
+      width: midW,
+      height: midH,
+      x: (vw - midW) / 2,
+      y: (vh - midH) / 2,
+    },
+    end: { width: vw, height: vh, x: 0, y: 0 },
+    viewportW: vw,
+    viewportH: vh,
   }
 }

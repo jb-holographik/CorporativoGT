@@ -11,6 +11,6 @@ export const customEase = CustomEase.get('hop')
 CustomEase.create('ctaHover', '0.37, 0, 0, 1')
 export const ctaHoverEase = CustomEase.get('ctaHover')
 
-// List transitions easing (cubic-bezier(0.57, 0.01, 0, 1))
-CustomEase.create('listEasing', '0.57, 0.01, 0, 1')
+// List transitions easing (cubic-bezier(0.6, 0, 0, 1))
+CustomEase.create('listEasing', '0.6, 0, 0, 1')
 export const listEasing = CustomEase.get('listEasing')
