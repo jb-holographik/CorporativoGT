@@ -13,6 +13,7 @@ import {
   initNavIndicator,
   setNavIndicatorTransitionState,
   unlockNavIndicator,
+  initNavMenuToggle,
 } from './nav.js'
 import { initSocialImpact } from './socialImpact.js'
 import { initStickyParagraph } from './stickyParagraph.js'
@@ -21,6 +22,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 const animationModules = [
   initNavIndicator,
+  initNavMenuToggle,
   initHero,
   initHomeAbout,
   initStickyParagraph,

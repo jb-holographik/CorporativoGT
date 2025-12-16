@@ -379,13 +379,31 @@ export function initNextCta() {
   const nextBtnImg = document.querySelector('.next-btn_img-img')
   const nextImgEl = document.querySelector('.next-img_img')
 
+  // Centre l'image de fond sur le centre du CTA
+  const positionNextBg = () => {
+    if (!nextBtnImgWrap || !nextBtn || !nextSectionEl) return
+    const btnRect = nextBtn.getBoundingClientRect()
+    const sectionRect = nextSectionEl.getBoundingClientRect()
+    const centerX = btnRect.left + btnRect.width / 2 - sectionRect.left
+    const centerY = btnRect.top + btnRect.height / 2 - sectionRect.top
+
+    gsap.set(nextBtnImgWrap, {
+      x: centerX,
+      y: centerY,
+      xPercent: -50,
+      yPercent: -50,
+    })
+  }
+
   // Initial states
   if (nextBtnImgWrap)
     gsap.set(nextBtnImgWrap, {
       width: 0,
       height: 0,
       overflow: 'hidden',
-      position: 'relative',
+      position: 'absolute',
+      xPercent: -50,
+      yPercent: -50,
     })
   if (nextBtnLabel) gsap.set(nextBtnLabel, { yPercent: 110 })
   if (nextBtnUnderline)
@@ -407,6 +425,25 @@ export function initNextCta() {
       scale: 1.4,
       pointerEvents: 'none',
     })
+
+  // Assure l'alignement centre CTA / fond, y compris au resize/refresh GSAP
+  positionNextBg()
+  gsap.delayedCall(0, positionNextBg)
+  window.addEventListener('resize', positionNextBg)
+  {
+    let rafPending = false
+    const onScroll = () => {
+      if (rafPending) return
+      rafPending = true
+      requestAnimationFrame(() => {
+        positionNextBg()
+        rafPending = false
+      })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+  }
+  if (typeof ScrollTrigger !== 'undefined')
+    ScrollTrigger.addEventListener('refreshInit', positionNextBg)
 
   // Scroll reveal: from top top to +25vh
   gsap
