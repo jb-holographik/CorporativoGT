@@ -102,14 +102,36 @@ export function freezeAndFlipToTarget({
 }
 
 export function initHomeAbout() {
-  const aboutCarousel = document.querySelector('.about-carousel')
-  const aboutWrap = document.querySelector('.about-wrap')
-  const aboutItems = document.querySelectorAll('.about-item')
+  const hasMatchMedia =
+    typeof window !== 'undefined' && typeof window.matchMedia !== 'undefined'
+  const isMobileLayout =
+    hasMatchMedia && window.matchMedia('(max-width: 991px)').matches
+  const isTabletLayout =
+    hasMatchMedia &&
+    window.matchMedia('(min-width: 768px) and (max-width: 991px)').matches
+
+  const aboutCarousel = document.querySelector(
+    isMobileLayout ? '.about-carousel_mobile' : '.about-carousel'
+  )
+  const aboutWrap = document.querySelector(
+    isMobileLayout ? '.about-wrap_carousel' : '.about-wrap'
+  )
+  const aboutItems = document.querySelectorAll(
+    isMobileLayout ? '.about-item_mobile' : '.about-item'
+  )
 
   // Get items data with individual configs
   const itemsData = initAboutItemsData()
 
   if (!aboutCarousel || !aboutWrap || itemsData.length === 0) return
+
+  // Headings travel a shorter distance on mobile
+  const headingStep = isMobileLayout ? (isTabletLayout ? 6.05 : 2.4) : 8.4
+
+  // Sur mobile/tablette, on laisse le CSS gérer la largeur (pas d'inline width GSAP)
+  if (isMobileLayout) {
+    gsap.set(aboutItems, { clearProps: 'width' })
+  }
 
   // Get position of about-carousel when it reaches the top of the viewport
   const startScrollY = window.scrollY || window.pageYOffset || 0
@@ -121,9 +143,16 @@ export function initHomeAbout() {
   const endCarouselAnimation = startScrollY + rect.top
 
   // Headings: initial offset and entrance animation while section comes into view
-  const aboutHeadingsInner = document.querySelector('.about_headings_inner')
+  const aboutHeadingsInner =
+    aboutCarousel?.querySelector('.about_headings_inner') ||
+    document.querySelector('.about_headings_inner')
   if (aboutHeadingsInner) {
-    gsap.set(aboutHeadingsInner, { y: '8.4em' })
+    gsap.set(aboutHeadingsInner, { y: `${headingStep}em` })
+  }
+
+  const targetItemWidth = isMobileLayout ? '5.5em' : '7.93em'
+  if (isMobileLayout) {
+    gsap.set(aboutItems, { width: 0 })
   }
 
   if (startCarouselAnimation <= endCarouselAnimation) {
@@ -136,7 +165,7 @@ export function initHomeAbout() {
       },
     })
 
-    itemWidthTl.to(aboutItems, { width: '7.93em' }, 0)
+    itemWidthTl.to(aboutItems, { width: targetItemWidth }, 0)
     if (aboutHeadingsInner) {
       // Move from +8.4em to 0 while the section comes into view
       itemWidthTl.to(aboutHeadingsInner, { y: '0em' }, 0)
@@ -161,7 +190,11 @@ export function initHomeAbout() {
 
   // Headings movement during sticky scroll (first part): 0 -> -8.4em
   if (aboutHeadingsInner) {
-    firstTl.to(aboutHeadingsInner, { y: '-8.4em', ease: customEase }, 0)
+    firstTl.to(
+      aboutHeadingsInner,
+      { y: `-${headingStep}em`, ease: customEase },
+      0
+    )
   }
 
   // Animate each item with its individual config
@@ -178,9 +211,12 @@ export function initHomeAbout() {
 
     // Slider animation (slider inside moves only in X)
     if (item.slider) {
-      const sliderTransform = {
-        x: `${item.sliderStop1.transformX}em`,
-        ease: customEase,
+      const sliderTransform = { ease: customEase }
+      if (typeof item.sliderStop1.transformX === 'number') {
+        sliderTransform.x = `${item.sliderStop1.transformX}em`
+      }
+      if (typeof item.sliderStop1.transformY === 'number') {
+        sliderTransform.y = `${item.sliderStop1.transformY}em`
       }
       firstTl.to(item.slider, sliderTransform, 0)
     }
@@ -201,41 +237,83 @@ export function initHomeAbout() {
 
   // Headings movement during sticky scroll (second part): -8.4em -> -16.8em
   if (aboutHeadingsInner) {
-    secondTl.to(aboutHeadingsInner, { y: '-16.8em', ease: customEase }, 0)
+    secondTl.to(
+      aboutHeadingsInner,
+      { y: `-${headingStep * 2}em`, ease: customEase },
+      0
+    )
   }
 
   // Animate each item with its individual config for second stop
   itemsData.forEach((item) => {
     // Item animation (element itself moves in X and Y)
     if (item.element) {
-      const itemTransform =
+      const itemTo =
         item.itemStop2 && item.itemStop2.centerX
           ? {
               x: () => {
                 const rectNow = item.element.getBoundingClientRect()
                 const currentCenter = rectNow.left + rectNow.width / 2
-                return window.innerWidth / 2 - currentCenter
+                const currentXPercent =
+                  typeof item.itemStop1.transformX === 'number'
+                    ? item.itemStop1.transformX
+                    : 0
+                const deltaFromPercent =
+                  (-currentXPercent / 100) * rectNow.width
+                const targetX =
+                  window.innerWidth / 2 - (currentCenter + deltaFromPercent)
+                // Compense la remise à zéro du xPercent pour rester centré en px
+                return targetX
               },
+              // Neutralise le xPercent hérité pour un centrage exact en px
+              xPercent: 0,
               yPercent: item.itemStop2.transformY,
-              immediateRender: false,
               ease: customEase,
             }
           : {
               xPercent: item.itemStop2.transformX,
               yPercent: item.itemStop2.transformY,
-              immediateRender: false,
               ease: customEase,
             }
-      secondTl.to(item.element, itemTransform, 0)
+      const itemFrom =
+        item.itemStop2 && item.itemStop2.centerX
+          ? {
+              // Point de départ = état du stop 1 (transform en % + x=0)
+              x: 0,
+              xPercent: item.itemStop1.transformX,
+              yPercent: item.itemStop1.transformY,
+            }
+          : {
+              xPercent: item.itemStop1.transformX,
+              yPercent: item.itemStop1.transformY,
+            }
+
+      secondTl.fromTo(
+        item.element,
+        itemFrom,
+        {
+          ...itemTo,
+          immediateRender: false,
+        },
+        0
+      )
     }
 
     // Slider animation (slider inside moves only in X)
     if (item.slider) {
-      const sliderTransform = {
-        x: `${item.sliderStop2.transformX}em`,
-        ease: customEase,
+      const from = {}
+      const to = { ease: customEase, immediateRender: false }
+
+      if (typeof item.sliderStop1.transformX === 'number') {
+        from.x = `${item.sliderStop1.transformX}em`
+        to.x = `${item.sliderStop2.transformX}em`
       }
-      secondTl.to(item.slider, sliderTransform, 0)
+      if (typeof item.sliderStop1.transformY === 'number') {
+        from.y = `${item.sliderStop1.transformY}em`
+        to.y = `${item.sliderStop2.transformY}em`
+      }
+
+      secondTl.fromTo(item.slider, from, to, 0)
     }
   })
 

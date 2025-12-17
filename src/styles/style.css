@@ -61,6 +61,21 @@
   width: 100%;
 }
 
+.about-item_badge {
+  position: absolute;
+  top: 0.3em;
+  left: 0.3em;
+  padding: 0.25em 0.45em;
+  border-radius: 999px;
+  background: #151515;
+  color: #fff;
+  font-size: 0.6em;
+  line-height: 1;
+  font-weight: 600;
+  z-index: 3;
+  pointer-events: none;
+}
+
 .section.section_corporate {
   position: relative;
 }
@@ -193,16 +208,25 @@
   z-index: 3;
 }
 
-@media (max-width: 768px) {
-  .about-item_mobile .about-item_inner{
-  	width: 5.5em;
+/* Appliqué aux mêmes paliers que le layout mobile/tablette (<=991px) */
+@media screen and (max-width: 991px) {
+  /* Forcer l'override Webflow (7.93em) sur mobile/tablette */
+  .about-carousel_mobile .about-item_inner,
+  .about-item_mobile .about-item_inner {
+    width: 5.5em;
     height: 7.75em;
+    position: relative;
   }
-  
+
   .about-item_mobile > .about-item_inner > .about-item_slider{
   	flex-direction: column;
     width: 5.5em;
     height: auto;
+  }
+
+  /* Orientation verticale uniquement en layout mobile/tablette */
+  .about-item_slider {
+    flex-direction: column;
   }
 
   .about-item_mobile .about-item_slider_slide{
