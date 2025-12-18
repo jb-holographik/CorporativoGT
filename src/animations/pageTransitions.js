@@ -74,13 +74,38 @@ function hydratePage({ reason, next } = {}) {
   syncCurrentNavLink(next)
   unlockNavIndicator()
   resumeSmoothScroll()
-  runAnimationModules(reason)
-  requestAnimationFrame(() => {
-    ScrollTrigger.refresh()
+
+  // Lors d'une transition Barba, on doit attendre que le DOM soit prêt
+  // avant de créer les ScrollTriggers
+  if (reason === 'barba') {
+    // Nettoyer la mémoire de scroll de GSAP pour éviter les conflits
+    ScrollTrigger.clearScrollMemory()
+
+    // Délai pour laisser le DOM se stabiliser après la transition
+    setTimeout(() => {
+      // Resize Lenis pour qu'il recalcule les dimensions
+      const lenis = getLenis()
+      if (lenis && typeof lenis.resize === 'function') {
+        lenis.resize()
+      }
+
+      // Initialiser les animations
+      runAnimationModules(reason)
+
+      // Rafraîchir ScrollTrigger après la création des triggers
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh(true)
+      })
+    }, 100)
+  } else {
+    runAnimationModules(reason)
     requestAnimationFrame(() => {
       ScrollTrigger.refresh()
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh()
+      })
     })
-  })
+  }
 }
 
 function resumeSmoothScroll() {
