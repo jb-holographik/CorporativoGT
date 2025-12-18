@@ -31,6 +31,9 @@ const refreshScrollContext = (() => {
 export function initCompanies() {
   const items = document.querySelectorAll('.companies_item')
   if (!items || items.length === 0) return
+  const isTabletOrMobile =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 991px)').matches
   // Page load: in each .companies_item, set first .item-image-sm to is-active (scoped)
   items.forEach((itm) => {
     const thumbs = itm.querySelectorAll('.item-image-sm')
@@ -199,9 +202,54 @@ export function initCompanies() {
       const em = parseFloat(getComputedStyle(item).fontSize) || 16
       return 34.063 * em
     }
-    // Fixer la hauteur de départ en px pour éviter un flash à la première ouverture
-    gsap.set(wrapper, { height: getHeightsPx().collapsed })
-    if (description) gsap.set(description, { height: 0 })
+
+    // MESURER D'ABORD la hauteur "ouverte" AVANT de masquer quoi que ce soit
+    // Stocker le scrollHeight de la description avant de la masquer
+    const descriptionScrollHeight = description ? description.scrollHeight : 0
+    // Mesurer la hauteur de smallStrip avant de la cacher
+    const smallStripHeight = smallStrip
+      ? smallStrip.getBoundingClientRect().height
+      : 0
+    // Calculer la hauteur ouverte du wrapper (image + gap + miniatures)
+    const em = parseFloat(getComputedStyle(wrapper).fontSize) || 16
+    const imageExpandedHeight = 28.125 * em // hauteur cible de l'image is-v
+    const wrapperGap = parseFloat(getComputedStyle(wrapper).gap) || em
+    const expandedWrapperHeight =
+      imageExpandedHeight + wrapperGap + smallStripHeight
+
+    // Simuler l'état ouvert pour mesurer la hauteur totale de l'item
+    const prevWrapperH = wrapper.style.height
+    const prevDescH = description ? description.style.height : null
+    const prevItemH = item.style.height
+    if (description) description.style.height = `${descriptionScrollHeight}px`
+    wrapper.style.height = `${expandedWrapperHeight}px`
+    item.style.height = 'auto'
+    const expandedItemHeight = item.getBoundingClientRect().height
+    // Restaurer
+    if (description) description.style.height = prevDescH || ''
+    wrapper.style.height = prevWrapperH || ''
+    item.style.height = prevItemH || ''
+
+    // ENSUITE masquer la description
+    if (description) {
+      description.style.height = '0px'
+      description.style.overflow = 'hidden'
+    }
+
+    // PUIS mesurer les hauteurs de départ (état fermé, description masquée)
+    const collapsedWrapperHeight = wrapper.getBoundingClientRect().height
+    const collapsedItemHeight = item.getBoundingClientRect().height
+
+    // Fixer la hauteur de départ pour permettre une animation fluide
+    if (!isTabletOrMobile) {
+      gsap.set(wrapper, { height: getHeightsPx().collapsed })
+      if (description) gsap.set(description, { height: 0 })
+    } else {
+      // Sur mobile/tablette, fixer les heights inline pour que l'animation ait un point de départ
+      gsap.set(wrapper, { height: collapsedWrapperHeight })
+      gsap.set(item, { height: collapsedItemHeight })
+      if (description) gsap.set(description, { height: 0 })
+    }
     if (smallStrip) gsap.set(smallStrip, { yPercent: 103, y: 0, x: 0 })
 
     // Capturer la largeur et hauteur initiales du .item-image.is-v pour les restaurer à la fermeture
@@ -211,45 +259,119 @@ export function initCompanies() {
     if (largeImageInit) {
       initialLargeImageWidth = largeImageInit.offsetWidth
       initialLargeImageHeight = largeImageInit.offsetHeight
+      gsap.set(largeImageInit, {
+        transformOrigin: 'center center',
+        clearProps: 'scale',
+      })
     }
 
     // Assurer que le wrapper a position: relative pour les enfants en absolu
     gsap.set(wrapper, { position: 'relative' })
 
-    // Mettre TOUTES les images en position: absolute à leur position exacte
-    // Calculer le left de chaque image en accumulant les largeurs + gaps du flex
     const imagesContainer = wrapper.querySelector('.companies_item-images')
     const allImages = wrapper.querySelectorAll('.item-image')
-    const computedStyle = getComputedStyle(imagesContainer)
-    const gap = parseFloat(computedStyle.gap) || 0
 
-    let currentLeft = 0
-    allImages.forEach((img) => {
-      const rect = img.getBoundingClientRect()
-      const wrapperRect = wrapper.getBoundingClientRect()
-      const relativeTop = rect.top - wrapperRect.top
-      const imgWidth = rect.width
-      const isLarge = img === largeImageInit
+    if (!isTabletOrMobile) {
+      // Mettre TOUTES les images en position: absolute à leur position exacte (desktop uniquement)
+      // Calculer le left de chaque image en accumulant les largeurs + gaps du flex
+      const computedStyle = getComputedStyle(imagesContainer)
+      const gap = parseFloat(computedStyle.gap) || 0
 
-      gsap.set(img, {
-        position: 'absolute',
-        top: relativeTop,
-        left: currentLeft,
-        width: imgWidth,
-        height: rect.height,
-        margin: 0,
-        zIndex: isLarge ? 1 : 0,
+      let currentLeft = 0
+      allImages.forEach((img) => {
+        const rect = img.getBoundingClientRect()
+        const wrapperRect = wrapper.getBoundingClientRect()
+        const relativeTop = rect.top - wrapperRect.top
+        const imgWidth = rect.width
+        const isLarge = img === largeImageInit
+
+        gsap.set(img, {
+          position: 'absolute',
+          top: relativeTop,
+          left: currentLeft,
+          width: imgWidth,
+          height: rect.height,
+          margin: 0,
+          zIndex: isLarge ? 1 : 0,
+        })
+
+        currentLeft += imgWidth + gap
       })
+    } else {
+      // Mobile/tablette : conserver un layout absolu comme desktop mais ajuster la taille du conteneur
+      if (imagesContainer) {
+        gsap.set(imagesContainer, {
+          position: 'relative',
+          inset: 'auto',
+          width: '100%',
+          height:
+            initialLargeImageHeight ||
+            imagesContainer.getBoundingClientRect().height ||
+            'auto',
+        })
+      }
+      // Recalcule les positions absolues comme sur desktop (gap flex)
+      const computedStyle = imagesContainer
+        ? getComputedStyle(imagesContainer)
+        : null
+      const gap = computedStyle ? parseFloat(computedStyle.gap) || 0 : 0
+      const baseWidth =
+        initialLargeImageWidth ||
+        (allImages[0] && allImages[0].getBoundingClientRect().width) ||
+        0
+      const baseHeight =
+        initialLargeImageHeight ||
+        (allImages[0] && allImages[0].getBoundingClientRect().height) ||
+        0
+      let currentLeft = 0
+      allImages.forEach((img) => {
+        const rect = img.getBoundingClientRect()
+        const wrapperRect = wrapper.getBoundingClientRect()
+        const relativeTop = rect.top - wrapperRect.top
+        const imgWidth = baseWidth || rect.width
+        const imgHeight = baseHeight || rect.height
+        const isLarge = img === largeImageInit
 
-      currentLeft += imgWidth + gap
-    })
+        gsap.set(img, {
+          position: 'absolute',
+          top: relativeTop,
+          left: currentLeft,
+          width: imgWidth,
+          height: imgHeight,
+          margin: 0,
+          zIndex: isLarge ? 2 : 1,
+          opacity: 1,
+          display: 'block',
+          pointerEvents: isLarge ? 'auto' : 'none',
+        })
+
+        currentLeft += imgWidth + gap
+      })
+      if (imagesContainer && currentLeft > 0) {
+        gsap.set(imagesContainer, { width: currentLeft })
+      }
+      // Sur tablette aussi, cacher smallStrip comme sur desktop
+      if (smallStrip) {
+        gsap.set(smallStrip, { yPercent: 103, y: 0, x: 0 })
+      }
+    }
 
     item.addEventListener('click', () => {
       if (isAnimating) return
       isAnimating = true
       const { collapsed, expanded: expandedPx } = getHeightsPx()
       const isExpanding = !expanded
-      const wrapperTarget = isExpanding ? expandedPx : collapsed
+      const getMobileCollapsedHeight = () => {
+        return collapsedWrapperHeight
+      }
+      // Utiliser les valeurs pré-calculées au montage
+      const wrapperTarget = isTabletOrMobile
+        ? isExpanding
+          ? expandedWrapperHeight
+          : getMobileCollapsedHeight()
+        : isExpanding
+        ? expandedPx
+        : collapsed
       const itemCurrentH =
         parseFloat(getComputedStyle(item).height) ||
         item.getBoundingClientRect().height
@@ -268,21 +390,40 @@ export function initCompanies() {
       // S'assurer que le container ne déborde pas pendant l'animation
       tl.set(item, { overflow: 'hidden' }, 0)
 
-      tl.to(
-        wrapper,
-        {
-          height: wrapperTarget,
-          duration: 1.4,
-          overwrite: 'auto',
-        },
-        0
-      )
+      if (isTabletOrMobile) {
+        tl.fromTo(
+          wrapper,
+          {
+            height: isExpanding
+              ? collapsedWrapperHeight
+              : expandedWrapperHeight,
+          },
+          {
+            height: wrapperTarget,
+            duration: 1.4,
+            overwrite: 'auto',
+          },
+          0
+        )
+        // Pas de gsap.set en auto - on garde la hauteur calculée
+      } else {
+        tl.to(
+          wrapper,
+          {
+            height: wrapperTarget,
+            duration: 1.4,
+            overwrite: 'auto',
+          },
+          0
+        )
+      }
 
-      // Animation du ruban d'images small: translateY(103%) -> -5em à l'ouverture, puis retour à 103% à la fermeture
+      // Animation du ruban d'images small (même comportement desktop et tablette)
       if (smallStrip) {
         if (isExpanding) {
-          const em = parseFloat(getComputedStyle(smallStrip).fontSize) || 16
-          const targetY = -5 * em
+          const emStrip =
+            parseFloat(getComputedStyle(smallStrip).fontSize) || 16
+          const targetY = -5 * emStrip
           tl.fromTo(
             smallStrip,
             { yPercent: 103, y: 0 },
@@ -320,23 +461,41 @@ export function initCompanies() {
           )
         }
 
-        // Animer .item-image.is-v vers width 42.5em et height 28.125em (déjà en absolute)
+        // Animer .item-image.is-v : desktop = width/height en em, mobile = width 100%
         if (largeImage) {
           const em = parseFloat(getComputedStyle(largeImage).fontSize) || 16
-          const targetWidth = 42.5 * em
+          const targetWidth = isTabletOrMobile ? '100%' : 42.5 * em
           const targetHeight = 28.125 * em
-          tl.to(
+          tl.fromTo(
             largeImage,
+            {
+              width: initialLargeImageWidth || largeImage.offsetWidth || '100%',
+              height:
+                initialLargeImageHeight || largeImage.offsetHeight || 'auto',
+              zIndex: 2,
+            },
             {
               width: targetWidth,
               height: targetHeight,
-              zIndex: 4,
+              zIndex: 10,
               duration: 1.4,
               ease: listEasing,
               overwrite: 'auto',
             },
             0
           )
+          if (isTabletOrMobile && imagesContainer) {
+            tl.to(
+              imagesContainer,
+              {
+                height: targetHeight,
+                width: '100%',
+                duration: 1.4,
+                overwrite: 'auto',
+              },
+              0
+            )
+          }
         }
       } else if (imagesWrapper && !isExpanding) {
         // À la fermeture, revenir à l'état initial
@@ -361,57 +520,96 @@ export function initCompanies() {
         // Revenir aux dimensions initiales de .item-image.is-v (animation inverse de l'ouverture)
         if (largeImage) {
           const em = parseFloat(getComputedStyle(largeImage).fontSize) || 16
-          const targetWidth = 42.5 * em
+          const fromWidth = isTabletOrMobile ? '100%' : 42.5 * em
           const targetHeight = 28.125 * em
           tl.fromTo(
             largeImage,
             {
-              width: targetWidth,
+              width: fromWidth,
               height: targetHeight,
-              zIndex: 999,
+              zIndex: 10,
             },
             {
               width: initialLargeImageWidth,
               height: initialLargeImageHeight,
-              zIndex: 1,
+              zIndex: 2,
               duration: 1.4,
               ease: listEasing,
               overwrite: 'auto',
             },
             0
           )
+          if (imagesContainer) {
+            const backHeight =
+              initialLargeImageHeight ||
+              imagesContainer.getBoundingClientRect().height ||
+              'auto'
+            tl.to(
+              imagesContainer,
+              {
+                width: '100%',
+                height: backHeight,
+                duration: 1.4,
+                overwrite: 'auto',
+              },
+              0
+            )
+          }
         }
       }
 
       // Animation de la hauteur de .companies_item
       if (isExpanding) {
-        itemTargetH = getItemExpandedPx()
-        tl.fromTo(
-          item,
-          { height: itemCurrentH },
-          {
-            height: itemTargetH,
-            duration: 1.4,
-            immediateRender: false,
-            overwrite: 'auto',
-          },
-          0
-        )
+        itemTargetH = isTabletOrMobile
+          ? expandedItemHeight
+          : getItemExpandedPx()
+        if (isTabletOrMobile) {
+          tl.fromTo(
+            item,
+            { height: collapsedItemHeight },
+            {
+              height: itemTargetH,
+              duration: 1.4,
+              immediateRender: false,
+              overwrite: 'auto',
+            },
+            0
+          )
+          tl.add(() => {
+            gsap.set(item, { height: 'auto' })
+          }, '>')
+        } else {
+          tl.fromTo(
+            item,
+            { height: itemCurrentH },
+            {
+              height: itemTargetH,
+              duration: 1.4,
+              immediateRender: false,
+              overwrite: 'auto',
+            },
+            0
+          )
+        }
       } else {
-        // À la fermeture, animer .companies_item vers 19.375em
+        // À la fermeture, animer .companies_item vers la hauteur d'origine
         const em = parseFloat(getComputedStyle(item).fontSize) || 16
         const collapsedItemH = 19.375 * em
+        const collapsedTarget = isTabletOrMobile
+          ? collapsedItemHeight
+          : collapsedItemH
 
         tl.fromTo(
           item,
           { height: itemCurrentH },
           {
-            height: collapsedItemH,
+            height: collapsedTarget,
             duration: 1.4,
             overwrite: 'auto',
           },
           0
         )
+        // NE PAS remettre en auto après fermeture - garder la hauteur fermée fixe
 
         // À la fermeture, réinitialiser le premier .item-image-sm et le premier .companies_s-item
         // Retirer les classes immédiatement
