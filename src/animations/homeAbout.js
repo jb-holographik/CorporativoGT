@@ -248,76 +248,149 @@ export function initHomeAbout() {
   itemsData.forEach((item) => {
     // Item animation (element itself moves in X and Y)
     if (item.element) {
-      const itemTo =
-        item.itemStop2 && item.itemStop2.centerX
-          ? {
-              x: () => {
-                const rectNow = item.element.getBoundingClientRect()
-                const currentCenter = rectNow.left + rectNow.width / 2
-                const currentXPercent =
-                  typeof item.itemStop1.transformX === 'number'
-                    ? item.itemStop1.transformX
-                    : 0
-                const deltaFromPercent =
-                  (-currentXPercent / 100) * rectNow.width
-                const targetX =
-                  window.innerWidth / 2 - (currentCenter + deltaFromPercent)
-                // Compense la remise à zéro du xPercent pour rester centré en px
-                return targetX
-              },
-              // Neutralise le xPercent hérité pour un centrage exact en px
-              xPercent: 0,
-              yPercent: item.itemStop2.transformY,
-              ease: customEase,
-            }
-          : {
-              xPercent: item.itemStop2.transformX,
-              yPercent: item.itemStop2.transformY,
-              ease: customEase,
-            }
-      const itemFrom =
-        item.itemStop2 && item.itemStop2.centerX
-          ? {
-              // Point de départ = état du stop 1 (transform en % + x=0)
-              x: 0,
-              xPercent: item.itemStop1.transformX,
-              yPercent: item.itemStop1.transformY,
-            }
-          : {
-              xPercent: item.itemStop1.transformX,
-              yPercent: item.itemStop1.transformY,
-            }
-
-      secondTl.fromTo(
+      secondTl.to(
         item.element,
-        itemFrom,
         {
-          ...itemTo,
-          immediateRender: false,
+          xPercent: item.itemStop2.transformX,
+          yPercent: item.itemStop2.transformY,
+          ease: customEase,
         },
         0
       )
     }
 
-    // Slider animation (slider inside moves only in X)
+    // Slider animation
     if (item.slider) {
-      const from = {}
-      const to = { ease: customEase, immediateRender: false }
-
-      if (typeof item.sliderStop1.transformX === 'number') {
-        from.x = `${item.sliderStop1.transformX}em`
-        to.x = `${item.sliderStop2.transformX}em`
+      const sliderTransform = { ease: customEase }
+      if (typeof item.sliderStop2.transformX === 'number') {
+        sliderTransform.x = `${item.sliderStop2.transformX}em`
       }
-      if (typeof item.sliderStop1.transformY === 'number') {
-        from.y = `${item.sliderStop1.transformY}em`
-        to.y = `${item.sliderStop2.transformY}em`
+      if (typeof item.sliderStop2.transformY === 'number') {
+        sliderTransform.y = `${item.sliderStop2.transformY}em`
       }
-
-      secondTl.fromTo(item.slider, from, to, 0)
+      secondTl.to(item.slider, sliderTransform, 0)
     }
   })
 
-  // === FLIP handoff for item 13 after stop2 ends ===
+  // Third animation: when scrolled another 50vh from second step
+  const thirdStepScroll = secondStepScroll + window.innerHeight * 0.5
+
+  const thirdTl = gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: {
+      start: secondStepScroll,
+      end: thirdStepScroll,
+      scrub: true,
+      invalidateOnRefresh: true,
+    },
+  })
+
+  // Headings movement during sticky scroll (third part): -16.8em -> -25.2em
+  if (aboutHeadingsInner) {
+    thirdTl.to(
+      aboutHeadingsInner,
+      { y: `-${headingStep * 3}em`, ease: customEase },
+      0
+    )
+  }
+
+  // Animate each item with its individual config for third stop
+  itemsData.forEach((item) => {
+    // Item animation (element itself moves in X and Y)
+    if (item.element) {
+      thirdTl.to(
+        item.element,
+        {
+          xPercent: item.itemStop3.transformX,
+          yPercent: item.itemStop3.transformY,
+          ease: customEase,
+        },
+        0
+      )
+    }
+
+    // Slider animation
+    if (item.slider) {
+      const sliderTransform = { ease: customEase }
+      if (typeof item.sliderStop3.transformX === 'number') {
+        sliderTransform.x = `${item.sliderStop3.transformX}em`
+      }
+      if (typeof item.sliderStop3.transformY === 'number') {
+        sliderTransform.y = `${item.sliderStop3.transformY}em`
+      }
+      thirdTl.to(item.slider, sliderTransform, 0)
+    }
+  })
+
+  // Fourth animation: when scrolled another 50vh from third step
+  const fourthStepScroll = thirdStepScroll + window.innerHeight * 0.5
+
+  const fourthTl = gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: {
+      start: thirdStepScroll,
+      end: fourthStepScroll,
+      scrub: true,
+      invalidateOnRefresh: true,
+    },
+  })
+
+  // Headings movement during sticky scroll (fourth part): -25.2em -> -33.6em
+  if (aboutHeadingsInner) {
+    fourthTl.to(
+      aboutHeadingsInner,
+      { y: `-${headingStep * 4}em`, ease: customEase },
+      0
+    )
+  }
+
+  // Animate each item with its individual config for fourth stop
+  itemsData.forEach((item) => {
+    // Item animation (element itself moves in X and Y)
+    if (item.element) {
+      const itemTransform =
+        item.itemStop4 && item.itemStop4.centerX
+          ? {
+              x: () => {
+                const rectNow = item.element.getBoundingClientRect()
+                const currentCenter = rectNow.left + rectNow.width / 2
+                const currentXPercent =
+                  typeof item.itemStop3.transformX === 'number'
+                    ? item.itemStop3.transformX
+                    : 0
+                const deltaFromPercent =
+                  (-currentXPercent / 100) * rectNow.width
+                const targetX =
+                  window.innerWidth / 2 - (currentCenter + deltaFromPercent)
+                return targetX
+              },
+              xPercent: 0,
+              yPercent: item.itemStop4.transformY,
+              ease: customEase,
+            }
+          : {
+              xPercent: item.itemStop4.transformX,
+              yPercent: item.itemStop4.transformY,
+              ease: customEase,
+            }
+
+      fourthTl.to(item.element, itemTransform, 0)
+    }
+
+    // Slider animation
+    if (item.slider) {
+      const sliderTransform = { ease: customEase }
+      if (typeof item.sliderStop4.transformX === 'number') {
+        sliderTransform.x = `${item.sliderStop4.transformX}em`
+      }
+      if (typeof item.sliderStop4.transformY === 'number') {
+        sliderTransform.y = `${item.sliderStop4.transformY}em`
+      }
+      fourthTl.to(item.slider, sliderTransform, 0)
+    }
+  })
+
+  // === FLIP handoff for item 13 after stop4 ends ===
   const item13 = itemsData.find((it) => it.id === 13)
   const item13El = item13?.element
   const nextImgEl =
@@ -327,8 +400,8 @@ export function initHomeAbout() {
 
   if (item13El && nextImgEl) {
     ScrollTrigger.create({
-      start: secondStepScroll,
-      end: secondStepScroll + 1,
+      start: fourthStepScroll,
+      end: fourthStepScroll + 1,
       once: true,
       onEnter: () => {
         // Laisser les timelines ScrollTrigger de l'item 13 actives pour qu'il suive au retour
@@ -347,7 +420,7 @@ export function initHomeAbout() {
         if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
 
         // Step 1 & 2: Combined scroll animation in a single timeline to avoid double-triggering
-        const step1Start = secondStepScroll
+        const step1Start = fourthStepScroll
         const step1End = step1Start + window.innerHeight * 0.25
         const step2Start = step1End
         const nextSectionEl = document.querySelector('.section.section_next')
