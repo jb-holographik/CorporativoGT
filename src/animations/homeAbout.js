@@ -2,7 +2,7 @@ import { gsap } from 'gsap'
 import { Flip } from 'gsap/Flip'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-import { ctaHoverEase, customEase } from '../utils/animationUtils.js'
+import { ctaHoverEase } from '../utils/animationUtils.js'
 import { initAboutItemsData } from '../utils/homeAboutItems.js'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -49,14 +49,14 @@ export function freezeAndFlipToTarget({
     gsap.set(clone, {
       position: 'fixed',
       left: r.left + r.width / 2, // center anchoring
-      top: r.top,
+      top: r.top + r.height / 2,
       width: r.width,
       height: r.height,
       margin: 0,
       x: 0,
       y: 0,
       xPercent: -50,
-      yPercent: 0,
+      yPercent: -50,
       transformOrigin: '50% 50%',
       zIndex: 2,
       overflow: 'hidden',
@@ -190,11 +190,7 @@ export function initHomeAbout() {
 
   // Headings movement during sticky scroll (first part): 0 -> -8.4em
   if (aboutHeadingsInner) {
-    firstTl.to(
-      aboutHeadingsInner,
-      { y: `-${headingStep}em`, ease: customEase },
-      0
-    )
+    firstTl.to(aboutHeadingsInner, { y: `-${headingStep}em`, ease: 'none' }, 0)
   }
 
   // Animate each item with its individual config
@@ -239,7 +235,7 @@ export function initHomeAbout() {
   if (aboutHeadingsInner) {
     secondTl.to(
       aboutHeadingsInner,
-      { y: `-${headingStep * 2}em`, ease: customEase },
+      { y: `-${headingStep * 2}em`, ease: 'none' },
       0
     )
   }
@@ -289,7 +285,7 @@ export function initHomeAbout() {
   if (aboutHeadingsInner) {
     thirdTl.to(
       aboutHeadingsInner,
-      { y: `-${headingStep * 3}em`, ease: customEase },
+      { y: `-${headingStep * 3}em`, ease: 'none' },
       0
     )
   }
@@ -339,7 +335,7 @@ export function initHomeAbout() {
   if (aboutHeadingsInner) {
     fourthTl.to(
       aboutHeadingsInner,
-      { y: `-${headingStep * 4}em`, ease: customEase },
+      { y: `-${headingStep * 4}em`, ease: 'none' },
       0
     )
   }
@@ -419,7 +415,7 @@ export function initHomeAbout() {
           document.querySelector('.next-img_img')
         if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
 
-        // Step 1 & 2: Combined scroll animation in a single timeline to avoid double-triggering
+        // Single scroll animation (linear) to the final state
         const step1Start = fourthStepScroll
         const step1End = step1Start + window.innerHeight * 0.25
         const step2Start = step1End
@@ -467,28 +463,16 @@ export function initHomeAbout() {
           scrollTrigger: scrollTriggerConfig,
         })
 
-        // Step 1: 25vh → size: 50vh (square), top: 50vh
-        overlayTl.to(
-          overlay,
-          {
-            width: () => window.innerHeight * 0.5,
-            height: () => window.innerHeight * 0.5,
-            top: () => window.innerHeight * 0.5,
-            ease: 'none',
-          },
-          0
-        )
-
-        // Step 2: remaining 50vh → width: 100vw, height: 100vh, top: 0
+        // Linear: from current size/pos to final full-screen state
         overlayTl.to(
           overlay,
           {
             width: () => window.innerWidth,
             height: () => window.innerHeight * 2,
-            top: 0,
+            top: () => window.innerHeight,
             ease: 'none',
           },
-          '25%' // Start at 25% of the total animation (after step1)
+          0
         )
 
         // Forcer la bonne visibilité aux bornes de la timeline, sans modifier l'animation
