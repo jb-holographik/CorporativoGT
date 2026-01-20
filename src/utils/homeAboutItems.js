@@ -22,94 +22,94 @@ const BASE_ITEMS_CONFIG = [
   },
   {
     id: 4,
-    stop1: { transformX: -225, transformY: 30 },
+    stop1: { transformX: -225, transformY: 0 },
     stop2: { transformX: -450, transformY: 0 },
     stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 5,
-    stop1: { transformX: -225, transformY: 15 },
-    stop2: { transformX: -450, transformY: 30 },
-    stop3: { transformX: -675, transformY: 15 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 6,
-    stop1: { transformX: -225, transformY: -15 },
-    stop2: { transformX: -450, transformY: -30 },
-    stop3: { transformX: -675, transformY: -15 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 7,
-    stop1: { transformX: -225, transformY: 15 },
-    stop2: { transformX: -450, transformY: 30 },
-    stop3: { transformX: -675, transformY: 15 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 8,
-    stop1: { transformX: -225, transformY: -30 },
+    stop1: { transformX: -225, transformY: 0 },
     stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -780, transformY: -40 },
+    stop3: { transformX: -780, transformY: 0 },
     stop4: { transformX: -950, transformY: 0 },
   },
   {
     id: 9,
-    stop1: { transformX: -225, transformY: -15 },
-    stop2: { transformX: -450, transformY: -30 },
-    stop3: { transformX: -795, transformY: -30 },
-    stop4: { transformX: -980, transformY: 20 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -795, transformY: 0 },
+    stop4: { transformX: -980, transformY: 0 },
   },
   {
     id: 10,
-    stop1: { transformX: -225, transformY: 15 },
-    stop2: { transformX: -450, transformY: 30 },
-    stop3: { transformX: -735, transformY: 20 },
-    stop4: { transformX: -940, transformY: -40 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -735, transformY: 0 },
+    stop4: { transformX: -940, transformY: 0 },
   },
   {
     id: 11,
-    stop1: { transformX: -225, transformY: -15 },
-    stop2: { transformX: -450, transformY: -30 },
-    stop3: { transformX: -785, transformY: -15 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -785, transformY: 0 },
     stop4: { transformX: -950, transformY: 0 },
   },
   {
     id: 12,
-    stop1: { transformX: -225, transformY: 15 },
-    stop2: { transformX: -450, transformY: 30 },
-    stop3: { transformX: -800, transformY: 15 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -800, transformY: 0 },
     stop4: { transformX: -940, transformY: 0 },
   },
   {
     id: 13,
-    stop1: { transformX: -225, transformY: -15 },
-    stop2: { transformX: -450, transformY: -30 },
-    stop3: { transformX: -780, transformY: -15 },
+    stop1: { transformX: -225, transformY: 0 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -780, transformY: 0 },
     stop4: { transformX: -90, transformY: 0, centerX: true },
   },
   {
     id: 14,
     stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: -20 },
-    stop3: { transformX: -735, transformY: -30 },
-    stop4: { transformX: -940, transformY: 20 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -735, transformY: 0 },
+    stop4: { transformX: -940, transformY: 0 },
   },
   {
     id: 15,
     stop1: { transformX: -225, transformY: 0 },
     stop2: { transformX: -450, transformY: 0 },
     stop3: { transformX: -675, transformY: 0 },
-    stop4: { transformX: -910, transformY: -20 },
+    stop4: { transformX: -910, transformY: 0 },
   },
   {
     id: 16,
     stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: -20 },
-    stop3: { transformX: -675, transformY: -30 },
-    stop4: { transformX: -920, transformY: -40 },
+    stop2: { transformX: -450, transformY: 0 },
+    stop3: { transformX: -675, transformY: 0 },
+    stop4: { transformX: -920, transformY: 0 },
   },
   {
     id: 17,
@@ -421,7 +421,7 @@ function ensureBadge(element, id) {
   element.appendChild(badge)
 }
 
-export function initAboutItemsData() {
+export function initAboutItemsData(root = document) {
   const breakpoint = getBreakpoint()
   const itemsConfig = getItemsConfigForBreakpoint(breakpoint)
   const itemClass =
@@ -430,32 +430,34 @@ export function initAboutItemsData() {
 
   // Configuration des sliders (desktop horizontal, mobile/tablette vertical)
   // Chaque stop = 1 image entière (~8em desktop, ~7.75em mobile)
-  const sliderConfig =
-    breakpoint === 'desktop'
-      ? {
-          stop1: { transformX: -7.938, transformY: 0 },
-          stop2: { transformX: -15.876, transformY: 0 },
-          stop3: { transformX: -23.814, transformY: 0 },
-          stop4: { transformX: -31.752, transformY: 0 },
-        }
-      : {
-          stop1: { transformY: -7.75 },
-          stop2: { transformY: -15.5 },
-          stop3: { transformY: -23.25 },
-          stop4: { transformY: -31 },
-        }
+  let sliderConfig
+  if (breakpoint === 'desktop') {
+    sliderConfig = {
+      stop1: { transformX: -7.938, transformY: 0 },
+      stop2: { transformX: -15.876, transformY: 0 },
+      stop3: { transformX: -23.814, transformY: 0 },
+      stop4: { transformX: -31.752, transformY: 0 },
+    }
+  } else {
+    sliderConfig = {
+      stop1: { transformY: -7.75 },
+      stop2: { transformY: -15.5 },
+      stop3: { transformY: -23.25 },
+      stop4: { transformY: -31 },
+    }
+  }
 
   // Générer les items avec leur configuration
   const items = itemsConfig.map((config) => {
     const selector = `.${itemClass}.is-${config.id}`
-    const element = document.querySelector(selector)
+    const element = root.querySelector(selector)
     if (isMobileLayout && element) {
       ensureBadge(element, config.id)
     }
     return {
       id: config.id,
       element,
-      slider: document.querySelector(`${selector} .about-item_slider`),
+      slider: root.querySelector(`${selector} .about-item_slider`),
       itemStop1: config.stop1,
       itemStop2: config.stop2,
       itemStop3: config.stop3,

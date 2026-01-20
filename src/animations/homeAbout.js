@@ -110,18 +110,36 @@ export function initHomeAbout() {
     hasMatchMedia &&
     window.matchMedia('(min-width: 768px) and (max-width: 991px)').matches
 
-  const aboutCarousel = document.querySelector(
+  const sectionSelectors = [
+    '.section_about',
+    '.section_about-test',
+    '.section_about-test-2',
+  ]
+
+  const sections = sectionSelectors
+    .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
+    .filter(Boolean)
+
+  if (!sections.length) return
+
+  sections.forEach((section) => {
+    initHomeAboutSection({ section, isMobileLayout, isTabletLayout })
+  })
+}
+
+function initHomeAboutSection({ section, isMobileLayout, isTabletLayout }) {
+  const aboutCarousel = section.querySelector(
     isMobileLayout ? '.about-carousel_mobile' : '.about-carousel'
   )
-  const aboutWrap = document.querySelector(
+  const aboutWrap = section.querySelector(
     isMobileLayout ? '.about-wrap_carousel' : '.about-wrap'
   )
-  const aboutItems = document.querySelectorAll(
+  const aboutItems = section.querySelectorAll(
     isMobileLayout ? '.about-item_mobile' : '.about-item'
   )
 
   // Get items data with individual configs
-  const itemsData = initAboutItemsData()
+  const itemsData = initAboutItemsData(section)
 
   if (!aboutCarousel || !aboutWrap || itemsData.length === 0) return
 
@@ -143,9 +161,9 @@ export function initHomeAbout() {
   const endCarouselAnimation = startScrollY + rect.top
 
   // Headings: initial offset and entrance animation while section comes into view
-  const aboutHeadingsInner =
-    aboutCarousel?.querySelector('.about_headings_inner') ||
-    document.querySelector('.about_headings_inner')
+  const aboutHeadingsInner = aboutCarousel.querySelector(
+    '.about_headings_inner'
+  )
   if (aboutHeadingsInner) {
     gsap.set(aboutHeadingsInner, { y: `${headingStep}em` })
   }
