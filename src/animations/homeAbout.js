@@ -204,14 +204,14 @@ export function initHomeAbout() {
       const itemTransform = {
         xPercent: item.itemStop1.transformX,
         yPercent: item.itemStop1.transformY,
-        ease: customEase,
+        ease: 'none',
       }
       firstTl.to(item.element, itemTransform, 0)
     }
 
     // Slider animation (slider inside moves only in X)
     if (item.slider) {
-      const sliderTransform = { ease: customEase }
+      const sliderTransform = { ease: 'none' }
       if (typeof item.sliderStop1.transformX === 'number') {
         sliderTransform.x = `${item.sliderStop1.transformX}em`
       }
@@ -253,7 +253,7 @@ export function initHomeAbout() {
         {
           xPercent: item.itemStop2.transformX,
           yPercent: item.itemStop2.transformY,
-          ease: customEase,
+          ease: 'none',
         },
         0
       )
@@ -261,7 +261,7 @@ export function initHomeAbout() {
 
     // Slider animation
     if (item.slider) {
-      const sliderTransform = { ease: customEase }
+      const sliderTransform = { ease: 'none' }
       if (typeof item.sliderStop2.transformX === 'number') {
         sliderTransform.x = `${item.sliderStop2.transformX}em`
       }
@@ -303,7 +303,7 @@ export function initHomeAbout() {
         {
           xPercent: item.itemStop3.transformX,
           yPercent: item.itemStop3.transformY,
-          ease: customEase,
+          ease: 'none',
         },
         0
       )
@@ -311,7 +311,7 @@ export function initHomeAbout() {
 
     // Slider animation
     if (item.slider) {
-      const sliderTransform = { ease: customEase }
+      const sliderTransform = { ease: 'none' }
       if (typeof item.sliderStop3.transformX === 'number') {
         sliderTransform.x = `${item.sliderStop3.transformX}em`
       }
@@ -366,12 +366,12 @@ export function initHomeAbout() {
               },
               xPercent: 0,
               yPercent: item.itemStop4.transformY,
-              ease: customEase,
+              ease: 'none',
             }
           : {
               xPercent: item.itemStop4.transformX,
               yPercent: item.itemStop4.transformY,
-              ease: customEase,
+              ease: 'none',
             }
 
       fourthTl.to(item.element, itemTransform, 0)
@@ -379,7 +379,7 @@ export function initHomeAbout() {
 
     // Slider animation
     if (item.slider) {
-      const sliderTransform = { ease: customEase }
+      const sliderTransform = { ease: 'none' }
       if (typeof item.sliderStop4.transformX === 'number') {
         sliderTransform.x = `${item.sliderStop4.transformX}em`
       }
