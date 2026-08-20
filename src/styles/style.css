@@ -260,3 +260,215 @@
     height: 7.75em;
   }
 }
+
+.about-stops-editor {
+  --editor-ink: #f2f0e8;
+  --editor-muted: #928f86;
+  --editor-line: #3a3935;
+  --editor-accent: #d7ff42;
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 99999;
+  width: min(23rem, calc(100vw - 2rem));
+  color: var(--editor-ink);
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.about-stops-editor,
+.about-stops-editor * {
+  box-sizing: border-box;
+}
+
+.about-stops-editor_panel {
+  margin-top: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--editor-line);
+  border-radius: 0.5rem;
+  background: rgba(20, 20, 18, 0.96);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+}
+
+.about-stops-editor_toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--editor-line);
+  border-radius: 0.5rem;
+  background: #141412;
+  color: var(--editor-ink);
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.about-stops-editor[data-collapsed="true"] {
+  width: 8rem;
+}
+
+.about-stops-editor[data-collapsed="true"] .about-stops-editor_panel {
+  display: none;
+}
+
+.about-stops-editor[data-collapsed="true"] .about-stops-editor_toggle {
+  border-color: var(--editor-accent);
+}
+
+.about-stops-editor_header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.about-stops-editor_eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--editor-accent);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.about-stops-editor h2 {
+  margin: 0;
+  color: var(--editor-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.about-stops-editor_status {
+  flex: none;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--editor-line);
+  border-radius: 999px;
+  color: var(--editor-muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.about-stops-editor_status.is-dirty {
+  border-color: var(--editor-accent);
+  color: var(--editor-accent);
+}
+
+.about-stops-editor_field {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--editor-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.about-stops-editor_field small {
+  color: #5f5d57;
+  font: inherit;
+}
+
+.about-stops-editor select,
+.about-stops-editor input {
+  width: 100%;
+  min-height: 2.65rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--editor-line);
+  border-radius: 0.25rem;
+  outline: none;
+  background: #0d0d0c;
+  color: var(--editor-ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.about-stops-editor select:focus,
+.about-stops-editor input:focus {
+  border-color: var(--editor-accent);
+}
+
+.about-stops-editor_stops {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.3rem;
+  margin: 0.85rem 0;
+}
+
+.about-stops-editor_stops button,
+.about-stops-editor_actions button,
+.about-stops-editor_reset-all {
+  border: 1px solid var(--editor-line);
+  background: transparent;
+  color: var(--editor-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.about-stops-editor_stops button {
+  height: 2.25rem;
+  border-radius: 0.25rem;
+}
+
+.about-stops-editor_stops button:hover,
+.about-stops-editor_stops button.is-active {
+  border-color: var(--editor-accent);
+  color: var(--editor-accent);
+}
+
+.about-stops-editor_coordinates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.about-stops-editor_apply {
+  width: 100%;
+  margin-top: 0.85rem;
+  padding: 0.8rem;
+  border: 1px solid var(--editor-accent);
+  border-radius: 0.25rem;
+  background: var(--editor-accent);
+  color: #11120d;
+  font: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.about-stops-editor_apply:hover {
+  background: #e3ff76;
+}
+
+.about-stops-editor_actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.about-stops-editor_actions button,
+.about-stops-editor_reset-all {
+  min-height: 2.2rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.about-stops-editor_actions button:hover,
+.about-stops-editor_reset-all:hover {
+  border-color: var(--editor-ink);
+  color: var(--editor-ink);
+}
+
+.about-stops-editor_reset-all {
+  width: 100%;
+  margin-top: 0.4rem;
+  border-color: transparent;
+}

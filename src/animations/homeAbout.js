@@ -12,6 +12,7 @@ gsap.registerPlugin(Flip)
 export function freezeAndFlipToTarget({
   itemEl,
   targetEl,
+  sourceImageEl,
   duration = 1.2,
   ease = 'power2.inOut',
   useClone = true,
@@ -35,7 +36,9 @@ export function freezeAndFlipToTarget({
     })
     // Try to grab the big image from the original item
     const srcImg =
-      itemEl.querySelector('.about-img_big') || itemEl.querySelector('img')
+      sourceImageEl ||
+      itemEl.querySelector('.about-img_big') ||
+      itemEl.querySelector('img')
     if (srcImg) {
       const img = srcImg.cloneNode(true)
       inner.appendChild(img)
@@ -404,26 +407,36 @@ function initHomeAboutSection({ section, isMobileLayout, isTabletLayout }) {
     }
   })
 
-  // === FLIP handoff for item 13 after stop4 ends ===
-  const item13 = itemsData.find((it) => it.id === 13)
-  const item13El = item13?.element
+  // === FLIP handoff after stop4 ends: item 13 desktop, item 28 mobile ===
+  const flipItemId = isMobileLayout ? 28 : 13
+  const flipItemEl =
+    itemsData.find((item) => item.id === flipItemId)?.element ||
+    section.querySelector(
+      `${
+        isMobileLayout ? '.about-item_mobile' : '.about-item'
+      }.is-${flipItemId}`
+    )
   const nextImgEl =
     document.querySelector('.section_next .next-img_img') ||
     document.querySelector('.next-img_img') ||
     document.querySelector('.next-img')
 
-  if (item13El && nextImgEl) {
+  if (flipItemEl && nextImgEl) {
     ScrollTrigger.create({
       start: fourthStepScroll,
       end: fourthStepScroll + 1,
       once: true,
       onEnter: () => {
-        // Laisser les timelines ScrollTrigger de l'item 13 actives pour qu'il suive au retour
+        // Laisser les timelines ScrollTrigger de l'item actif pour qu'il suive au retour
 
         // Freeze and get a fixed overlay clone (no target, manual scroll-driven steps)
+        const itemImages = flipItemEl.querySelectorAll('img')
         const result = freezeAndFlipToTarget({
-          itemEl: item13El,
+          itemEl: flipItemEl,
           targetEl: null,
+          sourceImageEl: isMobileLayout
+            ? itemImages[itemImages.length - 1]
+            : null,
         })
         const overlay = result?.element
         if (!overlay) return
@@ -437,6 +450,9 @@ function initHomeAboutSection({ section, isMobileLayout, isTabletLayout }) {
         const step1Start = fourthStepScroll
         const step1End = step1Start + window.innerHeight * 0.25
         const step2Start = step1End
+        // Le seuil peut être franchi de plusieurs pixels entre deux frames.
+        // Démarrer au scroll réel évite que le clone apparaisse déjà transformé.
+        const overlayStart = window.scrollY
         const nextSectionEl = document.querySelector('.section.section_next')
 
         // Determine step2 end point
@@ -449,15 +465,15 @@ function initHomeAboutSection({ section, isMobileLayout, isTabletLayout }) {
 
         // Create a single timeline for both steps
         const scrollTriggerConfig = {
-          start: step1Start,
+          start: overlayStart,
           scrub: true,
           onEnter: () => {
             gsap.set(overlay, { autoAlpha: 1 })
-            gsap.set(item13El, { autoAlpha: 0 })
+            gsap.set(flipItemEl, { autoAlpha: 0 })
           },
           onLeaveBack: () => {
             gsap.set(overlay, { autoAlpha: 0 })
-            gsap.set(item13El, { autoAlpha: 1 })
+            gsap.set(flipItemEl, { autoAlpha: 1 })
           },
           onLeave: () => {
             gsap.set(overlay, { autoAlpha: 0 })
@@ -502,7 +518,7 @@ function initHomeAboutSection({ section, isMobileLayout, isTabletLayout }) {
               : overlayTl.progress()
           if (p <= 0.001) {
             gsap.set(overlay, { autoAlpha: 0 })
-            gsap.set(item13El, { autoAlpha: 1 })
+            gsap.set(flipItemEl, { autoAlpha: 1 })
             if (nextBgEl) gsap.set(nextBgEl, { autoAlpha: 0 })
           } else if (p >= 0.999) {
             gsap.set(overlay, { autoAlpha: 0 })

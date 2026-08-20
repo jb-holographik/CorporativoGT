@@ -190,6 +190,7 @@ export function initCompanies() {
 
     let isAnimating = false
     let expanded = false
+    let activeImageIndex = 0
     // Toujours travailler en pixels pour éviter tout mix px/em au premier clic
     const getHeightsPx = () => {
       const em = parseFloat(getComputedStyle(wrapper).fontSize) || 16
@@ -270,6 +271,69 @@ export function initCompanies() {
 
     const imagesContainer = wrapper.querySelector('.companies_item-images')
     const allImages = wrapper.querySelectorAll('.item-image')
+    const localThumbs = item.querySelectorAll('.item-image-sm')
+    gsap.set(localThumbs, { yPercent: 103 })
+    localThumbs.forEach((thumb, index) => {
+      thumb.addEventListener('click', () => {
+        activeImageIndex = index
+      })
+    })
+    const localGalleryItems = item.querySelectorAll(
+      '.companies_s-item:not([data-clone="true"])'
+    )
+
+    const activateGalleryImage = (index) => {
+      const targetThumb = localThumbs[index]
+      const targetGalleryItem = localGalleryItems[index]
+      if (!targetGalleryItem) return
+
+      localThumbs.forEach((thumb) => thumb.classList.remove('is-active'))
+      if (targetThumb) targetThumb.classList.add('is-active')
+
+      localGalleryItems.forEach((galleryItem) => {
+        galleryItem.classList.remove('is-active')
+        galleryItem.classList.remove('active-next')
+        gsap.set(galleryItem, { zIndex: 0 })
+      })
+      targetGalleryItem.classList.add('is-active')
+      gsap.set(targetGalleryItem, { zIndex: 4, scale: 1, opacity: 1 })
+    }
+
+    const createFirstPreviewClone = () => {
+      if (!largeImageInit || !imagesContainer) return null
+
+      const clone = largeImageInit.cloneNode(true)
+      clone.classList.remove('is-v')
+      clone.dataset.firstPreviewClone = 'true'
+      clone
+        .querySelectorAll('[data-clone="true"]')
+        .forEach((galleryClone) => galleryClone.remove())
+
+      const galleryItems = clone.querySelectorAll('.companies_s-item')
+      galleryItems.forEach((galleryItem, index) => {
+        galleryItem.classList.toggle('is-active', index === 0)
+        galleryItem.classList.remove('active-next')
+        gsap.set(galleryItem, { zIndex: index === 0 ? 4 : 0 })
+      })
+
+      imagesContainer.appendChild(clone)
+      gsap.set(clone, {
+        position: 'absolute',
+        top: largeImageInit.offsetTop,
+        left: largeImageInit.offsetLeft,
+        width: initialLargeImageWidth,
+        height: initialLargeImageHeight,
+        margin: 0,
+        zIndex: 3,
+        opacity: 1,
+        pointerEvents: 'none',
+        x: 0,
+        y: 0,
+        xPercent: 0,
+        yPercent: 0,
+      })
+      return clone
+    }
 
     if (!isTabletOrMobile) {
       // Mettre TOUTES les images en position: absolute à leur position exacte (desktop uniquement)
@@ -342,7 +406,7 @@ export function initCompanies() {
           zIndex: isLarge ? 2 : 1,
           opacity: 1,
           display: 'block',
-          pointerEvents: isLarge ? 'auto' : 'none',
+          pointerEvents: 'auto',
         })
 
         currentLeft += imgWidth + gap
@@ -356,11 +420,26 @@ export function initCompanies() {
       }
     }
 
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (event) => {
       if (isAnimating) return
       isAnimating = true
       const { collapsed, expanded: expandedPx } = getHeightsPx()
       const isExpanding = !expanded
+      const clickedImage = event.target.closest('.item-image')
+      const selectedImage =
+        isExpanding &&
+        clickedImage &&
+        clickedImage.parentElement === imagesContainer
+          ? clickedImage
+          : largeImageInit
+      const selectedImageIndex = Math.max(
+        0,
+        Array.from(allImages).indexOf(selectedImage)
+      )
+      if (isExpanding) {
+        activeImageIndex = selectedImageIndex
+        activateGalleryImage(selectedImageIndex)
+      }
       const getMobileCollapsedHeight = () => {
         return collapsedWrapperHeight
       }
@@ -382,6 +461,7 @@ export function initCompanies() {
         onComplete: () => {
           isAnimating = false
           expanded = !expanded
+          if (!isExpanding) activeImageIndex = 0
           refreshScrollContext()
         },
       })
@@ -420,6 +500,11 @@ export function initCompanies() {
 
       // Animation du ruban d'images small (même comportement desktop et tablette)
       if (smallStrip) {
+        const thumbStagger = 0.06
+        const thumbDuration = Math.max(
+          0,
+          1.4 - thumbStagger * Math.max(0, localThumbs.length - 1)
+        )
         if (isExpanding) {
           const emStrip =
             parseFloat(getComputedStyle(smallStrip).fontSize) || 16
@@ -430,10 +515,32 @@ export function initCompanies() {
             { yPercent: 0, y: targetY, duration: 1.4, overwrite: 'auto' },
             0
           )
+          tl.to(
+            localThumbs,
+            {
+              yPercent: 0,
+              duration: thumbDuration,
+              ease: listEasing,
+              overwrite: 'auto',
+              stagger: thumbStagger,
+            },
+            0
+          )
         } else {
           tl.to(
             smallStrip,
             { yPercent: 103, y: 0, duration: 1.4, overwrite: 'auto' },
+            0
+          )
+          tl.to(
+            localThumbs,
+            {
+              yPercent: 103,
+              duration: thumbDuration,
+              ease: listEasing,
+              overwrite: 'auto',
+              stagger: thumbStagger,
+            },
             0
           )
         }
@@ -442,13 +549,31 @@ export function initCompanies() {
       // Animation des .item-image avec stagger: immobiles puis transformY -102% + opacity 0, sauf .item-image.is-v
       const imagesWrapper = item.querySelector('.companies-img-wrapper')
       if (imagesWrapper && isExpanding) {
-        const images = imagesWrapper.querySelectorAll('.item-image:not(.is-v)')
+        const images = Array.from(
+          imagesWrapper.querySelectorAll('.item-image:not(.is-v)')
+        )
         const largeImage = imagesWrapper.querySelector('.item-image.is-v')
+        const animateFromPreview =
+          selectedImage && largeImage && selectedImage !== largeImage
+        let expansionClone = null
+        const firstPreviewClone = animateFromPreview
+          ? createFirstPreviewClone()
+          : null
+        const staggerImages = animateFromPreview
+          ? [
+              ...(firstPreviewClone ? [firstPreviewClone] : []),
+              ...images.filter((image) => image !== selectedImage),
+            ]
+          : images
 
-        if (images.length > 0) {
+        if (animateFromPreview) {
+          gsap.set(selectedImage, { opacity: 0 })
+        }
+
+        if (staggerImages.length > 0) {
           // Animer avec stagger: transformY + opacity (images déjà en absolute)
           tl.to(
-            images,
+            staggerImages,
             {
               yPercent: -102,
               opacity: 0,
@@ -466,6 +591,41 @@ export function initCompanies() {
           const em = parseFloat(getComputedStyle(largeImage).fontSize) || 16
           const targetWidth = isTabletOrMobile ? '100%' : 42.5 * em
           const targetHeight = 28.125 * em
+          if (animateFromPreview) {
+            expansionClone = selectedImage.cloneNode(true)
+            expansionClone.dataset.expansionClone = 'true'
+            imagesContainer.appendChild(expansionClone)
+            gsap.set(expansionClone, {
+              position: 'absolute',
+              top: selectedImage.offsetTop,
+              left: selectedImage.offsetLeft,
+              width: selectedImage.offsetWidth,
+              height: selectedImage.offsetHeight,
+              margin: 0,
+              zIndex: 11,
+              opacity: 1,
+              pointerEvents: 'none',
+              overflow: 'hidden',
+              x: 0,
+              y: 0,
+              xPercent: 0,
+              yPercent: 0,
+            })
+            tl.set(largeImage, { opacity: 0 }, 0)
+            tl.to(
+              expansionClone,
+              {
+                top: largeImage.offsetTop,
+                left: largeImage.offsetLeft,
+                width: targetWidth,
+                height: targetHeight,
+                duration: 1.4,
+                ease: listEasing,
+                overwrite: 'auto',
+              },
+              0
+            )
+          }
           tl.fromTo(
             largeImage,
             {
@@ -484,6 +644,13 @@ export function initCompanies() {
             },
             0
           )
+          if (expansionClone) {
+            tl.add(() => {
+              gsap.set(largeImage, { opacity: 1 })
+              expansionClone.remove()
+              if (firstPreviewClone) firstPreviewClone.remove()
+            }, 1.4)
+          }
           if (isTabletOrMobile && imagesContainer) {
             tl.to(
               imagesContainer,
@@ -499,12 +666,29 @@ export function initCompanies() {
         }
       } else if (imagesWrapper && !isExpanding) {
         // À la fermeture, revenir à l'état initial
-        const images = imagesWrapper.querySelectorAll('.item-image:not(.is-v)')
+        const images = Array.from(
+          imagesWrapper.querySelectorAll('.item-image:not(.is-v)')
+        )
         const largeImage = imagesWrapper.querySelector('.item-image.is-v')
+        const activeImage = allImages[activeImageIndex] || largeImage
+        const animateToPreview =
+          activeImage && largeImage && activeImage !== largeImage
+        const firstPreviewClone = animateToPreview
+          ? createFirstPreviewClone()
+          : null
+        if (firstPreviewClone) {
+          gsap.set(firstPreviewClone, { yPercent: -102, opacity: 0 })
+        }
+        const returningImages = animateToPreview
+          ? [
+              ...(firstPreviewClone ? [firstPreviewClone] : []),
+              ...images.filter((image) => image !== activeImage),
+            ]
+          : images
 
-        if (images.length > 0) {
+        if (returningImages.length > 0) {
           tl.to(
-            images,
+            returningImages,
             {
               yPercent: 0,
               opacity: 1,
@@ -522,6 +706,48 @@ export function initCompanies() {
           const em = parseFloat(getComputedStyle(largeImage).fontSize) || 16
           const fromWidth = isTabletOrMobile ? '100%' : 42.5 * em
           const targetHeight = 28.125 * em
+          let collapseClone = null
+          if (animateToPreview) {
+            collapseClone = activeImage.cloneNode(true)
+            collapseClone.dataset.collapseClone = 'true'
+            imagesContainer.appendChild(collapseClone)
+            gsap.set(collapseClone, {
+              position: 'absolute',
+              top: largeImage.offsetTop,
+              left: largeImage.offsetLeft,
+              width: largeImage.offsetWidth,
+              height: largeImage.offsetHeight,
+              margin: 0,
+              zIndex: 11,
+              opacity: 1,
+              pointerEvents: 'none',
+              overflow: 'hidden',
+              x: 0,
+              y: 0,
+              xPercent: 0,
+              yPercent: 0,
+            })
+            gsap.set(largeImage, { opacity: 0 })
+            tl.to(
+              collapseClone,
+              {
+                top: activeImage.offsetTop,
+                left: activeImage.offsetLeft,
+                width: activeImage.offsetWidth,
+                height: activeImage.offsetHeight,
+                duration: 1.4,
+                ease: listEasing,
+                overwrite: 'auto',
+              },
+              0
+            )
+            tl.add(() => {
+              gsap.set(activeImage, { yPercent: 0, opacity: 1 })
+              gsap.set(largeImage, { opacity: 1 })
+              collapseClone.remove()
+              if (firstPreviewClone) firstPreviewClone.remove()
+            }, 1.4)
+          }
           tl.fromTo(
             largeImage,
             {
@@ -611,24 +837,14 @@ export function initCompanies() {
         )
         // NE PAS remettre en auto après fermeture - garder la hauteur fermée fixe
 
-        // À la fermeture, réinitialiser le premier .item-image-sm et le premier .companies_s-item
-        // Retirer les classes immédiatement
-        const firstImageSm = item.querySelector('.item-image-sm')
-        // Cibler explicitement data-item="1" dans la liste correspondante
+        // Conserver la miniature et l'image de galerie actives pendant la fermeture
         const companiesList = item.querySelector('.companies_s-list')
         const firstCompanyItem =
           companiesList &&
           companiesList.querySelector(
             '.companies_s-item[data-item="1"]:not([data-clone="true"])'
           )
-        if (firstImageSm) {
-          const localThumbs = item.querySelectorAll('.item-image-sm')
-          localThumbs.forEach((img) => img.classList.remove('is-active'))
-          firstImageSm.classList.add('is-active')
-        }
-
         if (companiesList) {
-          // Déterminer la cible: data-item="1" si présent, sinon premier item non-clone
           const fallbackFirst =
             companiesList.querySelector(
               '.companies_s-item:not([data-clone="true"])'

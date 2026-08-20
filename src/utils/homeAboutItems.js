@@ -1,3 +1,8 @@
+import {
+  applyAboutStopsOverrides,
+  initAboutStopsEditor,
+} from './aboutStopsEditor.js'
+
 const BASE_ITEMS_CONFIG = [
   {
     id: 1,
@@ -8,7 +13,7 @@ const BASE_ITEMS_CONFIG = [
   },
   {
     id: 2,
-    stop1: { transformX: -225, transformY: 0 },
+    stop1: { transformX: -225, transformY: -80 },
     stop2: { transformX: -450, transformY: 0 },
     stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
@@ -22,71 +27,71 @@ const BASE_ITEMS_CONFIG = [
   },
   {
     id: 4,
-    stop1: { transformX: -225, transformY: 0 },
+    stop1: { transformX: -225, transformY: 45 },
     stop2: { transformX: -450, transformY: 0 },
     stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 5,
-    stop1: { transformX: -225, transformY: 0 },
+    stop1: { transformX: -225, transformY: 30 },
     stop2: { transformX: -450, transformY: 0 },
     stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 6,
-    stop1: { transformX: -225, transformY: 0 },
+    stop1: { transformX: -225, transformY: -40 },
     stop2: { transformX: -450, transformY: 0 },
     stop3: { transformX: -675, transformY: 0 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 7,
-    stop1: { transformX: -225, transformY: 0 },
+    stop1: { transformX: -225, transformY: -30 },
     stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -675, transformY: 0 },
+    stop3: { transformX: -675, transformY: 30 },
     stop4: { transformX: -900, transformY: 0 },
   },
   {
     id: 8,
-    stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -780, transformY: 0 },
+    stop1: { transformX: -225, transformY: -30 },
+    stop2: { transformX: -550, transformY: 30 },
+    stop3: { transformX: -780, transformY: -25 },
     stop4: { transformX: -950, transformY: 0 },
   },
   {
     id: 9,
-    stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -795, transformY: 0 },
+    stop1: { transformX: -225, transformY: -40 },
+    stop2: { transformX: -450, transformY: -10 },
+    stop3: { transformX: -795, transformY: -40 },
     stop4: { transformX: -980, transformY: 0 },
   },
   {
     id: 10,
     stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -735, transformY: 0 },
+    stop2: { transformX: -450, transformY: 43 },
+    stop3: { transformX: -735, transformY: -30 },
     stop4: { transformX: -940, transformY: 0 },
   },
   {
     id: 11,
     stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -785, transformY: 0 },
+    stop2: { transformX: -450, transformY: -40 },
+    stop3: { transformX: -785, transformY: 30 },
     stop4: { transformX: -950, transformY: 0 },
   },
   {
     id: 12,
     stop1: { transformX: -225, transformY: 0 },
     stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -800, transformY: 0 },
+    stop3: { transformX: -800, transformY: -50 },
     stop4: { transformX: -940, transformY: 0 },
   },
   {
     id: 13,
     stop1: { transformX: -225, transformY: 0 },
-    stop2: { transformX: -450, transformY: 0 },
+    stop2: { transformX: -450, transformY: -30 },
     stop3: { transformX: -780, transformY: 0 },
     stop4: { transformX: -90, transformY: 0, centerX: true },
   },
@@ -94,7 +99,7 @@ const BASE_ITEMS_CONFIG = [
     id: 14,
     stop1: { transformX: -225, transformY: 0 },
     stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -735, transformY: 0 },
+    stop3: { transformX: -735, transformY: 30 },
     stop4: { transformX: -940, transformY: 0 },
   },
   {
@@ -108,7 +113,7 @@ const BASE_ITEMS_CONFIG = [
     id: 16,
     stop1: { transformX: -225, transformY: 0 },
     stop2: { transformX: -450, transformY: 0 },
-    stop3: { transformX: -675, transformY: 0 },
+    stop3: { transformX: -675, transformY: -20 },
     stop4: { transformX: -920, transformY: 0 },
   },
   {
@@ -257,6 +262,16 @@ const TABLET_ITEMS_CONFIG = [
   },
 ]
 
+function createStationaryItemConfig(id) {
+  return {
+    id,
+    stop1: { transformX: 0, transformY: 0 },
+    stop2: { transformX: 0, transformY: 0 },
+    stop3: { transformX: 0, transformY: 0 },
+    stop4: { transformX: 0, transformY: 0 },
+  }
+}
+
 const MOBILE_ITEMS_CONFIG = [
   {
     id: 1,
@@ -384,6 +399,13 @@ const MOBILE_ITEMS_CONFIG = [
     stop3: { transformX: 0, transformY: 0 },
     stop4: { transformX: 0, transformY: 0 },
   },
+  ...Array.from({ length: 9 }, (_, index) =>
+    createStationaryItemConfig(index + 19)
+  ),
+  {
+    ...createStationaryItemConfig(28),
+    stop4: { transformX: 0, transformY: 0, centerX: true },
+  },
 ]
 
 function getBreakpoint() {
@@ -403,9 +425,10 @@ function getBreakpoint() {
 }
 
 function getItemsConfigForBreakpoint(breakpoint) {
-  if (breakpoint === 'mobile') return MOBILE_ITEMS_CONFIG
-  if (breakpoint === 'tablet') return TABLET_ITEMS_CONFIG
-  return BASE_ITEMS_CONFIG
+  let itemsConfig = BASE_ITEMS_CONFIG
+  if (breakpoint === 'mobile') itemsConfig = MOBILE_ITEMS_CONFIG
+  if (breakpoint === 'tablet') itemsConfig = TABLET_ITEMS_CONFIG
+  return applyAboutStopsOverrides(itemsConfig, breakpoint)
 }
 
 function ensureBadge(element, id) {
@@ -421,12 +444,24 @@ function ensureBadge(element, id) {
   element.appendChild(badge)
 }
 
+function ensureAllItemBadges(root, itemClass) {
+  root.querySelectorAll(`.${itemClass}`).forEach((element, index) => {
+    const numberedClass = Array.from(element.classList).find((className) =>
+      /^is-\d+$/.test(className)
+    )
+    const id = numberedClass
+      ? Number(numberedClass.replace('is-', ''))
+      : index + 1
+    ensureBadge(element, id)
+  })
+}
+
 export function initAboutItemsData(root = document) {
   const breakpoint = getBreakpoint()
   const itemsConfig = getItemsConfigForBreakpoint(breakpoint)
   const itemClass =
     breakpoint === 'desktop' ? 'about-item' : 'about-item_mobile'
-  const isMobileLayout = breakpoint !== 'desktop'
+  ensureAllItemBadges(root, itemClass)
 
   // Configuration des sliders (desktop horizontal, mobile/tablette vertical)
   // Chaque stop = 1 image entière (~8em desktop, ~7.75em mobile)
@@ -451,9 +486,6 @@ export function initAboutItemsData(root = document) {
   const items = itemsConfig.map((config) => {
     const selector = `.${itemClass}.is-${config.id}`
     const element = root.querySelector(selector)
-    if (isMobileLayout && element) {
-      ensureBadge(element, config.id)
-    }
     return {
       id: config.id,
       element,
@@ -468,6 +500,10 @@ export function initAboutItemsData(root = document) {
       sliderStop4: sliderConfig.stop4,
     }
   })
+
+  if (import.meta.env.DEV) {
+    initAboutStopsEditor({ breakpoint, itemsConfig })
+  }
 
   return items
 }
