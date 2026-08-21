@@ -5,6 +5,8 @@ import { initScrollCounter } from '../utils/scrollCounter.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
+let missionMatchMedia
+
 function initCorporateCardsAnimation() {
   const corporateSection = document.querySelector('.section.section_corporate')
   const corporateStickyWrap = document.querySelector('.corporate-sticky-wrap')
@@ -41,96 +43,67 @@ function initCorporateCardsAnimation() {
     }
   })
 
-  const totalCards = cards.length
-
-  // Nombre de cartes à animer (toutes sauf la première)
-  const cardsToAnimate = totalCards > 0 ? totalCards - 1 : 0
+  const getStackStep = () =>
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(max-width: 767px)').matches
+      ? 1.3
+      : 2
 
   const getStickyTravelDistance = () => {
     if (typeof window === 'undefined') {
       return 1
     }
 
-    const sectionHeight =
-      corporateSection.scrollHeight ||
-      corporateSection.getBoundingClientRect().height ||
-      0
+    const paddingBottom =
+      parseFloat(getComputedStyle(corporateSection).paddingBottom) || 0
+    const travel =
+      corporateSection.offsetHeight -
+      corporateStickyWrap.offsetTop -
+      corporateStickyWrap.offsetHeight -
+      paddingBottom
 
-    const stickyHeight =
-      corporateStickyWrap.getBoundingClientRect().height ||
-      corporateStickyWrap.offsetHeight ||
-      window.innerHeight ||
-      0
-
-    const travel = sectionHeight - stickyHeight
     return travel > 0 ? travel : 1
   }
 
-  const stickyDuration = getStickyTravelDistance()
-  const movingCards = cardsToAnimate > 0 ? cardsToAnimate : 1
-  const cardDuration = stickyDuration / movingCards
-
-  // Animation timeline pour les cartes
   const corporateTimeline = gsap.timeline({
     defaults: {
       ease: 'none',
       overwrite: 'auto',
     },
     scrollTrigger: {
-      trigger: corporateSection,
-      start: 'top top', // Début de la section
-      end: 'bottom bottom', // Durée déterminée par la section elle-même
-      scrub: true, // Lier l'animation au scroll
-      markers: false, // À mettre à true pour debug
+      trigger: corporateStickyWrap,
+      start: 'top top',
+      end: () => `+=${getStickyTravelDistance()}`,
+      scrub: true,
+      markers: false,
       invalidateOnRefresh: true,
     },
   })
 
-  // Animer chaque carte pour qu'elles se superposent une par une
   cards.forEach((card, index) => {
     if (index === 0) {
-      // La première carte reste en place
       return
     }
-
-    // Position finale : chaque carte à 2em des autres
-    const finalTop = index * 2
-
-    // Temps d'arrivée de cette carte dans la timeline
-    const startTime = (index - 1) * cardDuration
 
     corporateTimeline.fromTo(
       card,
       {
-        top: () => getOffscreenCardTop(), // Position initiale
+        top: () => getOffscreenCardTop(),
       },
       {
-        top: `${finalTop}em`, // Position finale (2em, 4em, 6em, 8em, etc.)
+        top: () => `${index * getStackStep()}em`,
         immediateRender: false,
-        duration: cardDuration,
-      },
-      startTime // Temps d'arrivée dans la timeline
+        duration: 1,
+      }
     )
   })
 
   cardHeadings.forEach((heading, index) => {
-    if (!heading) {
+    if (!heading || index === cards.length - 1) {
       return
     }
 
-    const isLastCard = index === cards.length - 1
-    let fadeTime = null
-
-    if (cardsToAnimate > 0) {
-      if (!isLastCard) {
-        // Attendre que la carte suivante termine son animation
-        fadeTime = (index + 1) * cardDuration
-      }
-    }
-
-    if (fadeTime !== null) {
-      corporateTimeline.set(heading, { opacity: 0.2 }, fadeTime)
-    }
+    corporateTimeline.set(heading, { opacity: 0.2 }, index + 1)
   })
 }
 
@@ -149,6 +122,10 @@ export function initAboutUs() {
 
   const missionSection = document.querySelector('.section.section_our-mission')
   if (!missionSection) {
+    if (missionMatchMedia) {
+      missionMatchMedia.revert()
+      missionMatchMedia = null
+    }
     return
   }
 
@@ -165,30 +142,69 @@ export function initAboutUs() {
     !missionElements.top ||
     !missionElements.topImg
   ) {
+    if (missionMatchMedia) {
+      missionMatchMedia.revert()
+      missionMatchMedia = null
+    }
     return
   }
 
   const { leftImg, top2, top, topImg } = missionElements
 
-  // Assurer l'état initial des éléments de la section Our Mission
-  gsap.set(leftImg, { x: 0 })
-  gsap.set(top2, { x: 0 })
-  gsap.set(top, { x: 0, zIndex: 1 })
-  gsap.set(topImg, { xPercent: 0 })
+  if (missionMatchMedia) {
+    missionMatchMedia.revert()
+  }
 
-  // Animation GSAP pour la section Our Mission
+  missionMatchMedia = gsap.matchMedia()
+  missionMatchMedia.add(
+    {
+      isDesktop: '(min-width: 768px)',
+      isMobile: '(max-width: 767px)',
+    },
+    (context) => {
+      const isVertical = Boolean(context.conditions?.isMobile)
+      setupMissionScroll({
+        missionSection,
+        leftImg,
+        top2,
+        top,
+        topImg,
+        isVertical,
+      })
+    }
+  )
+}
+
+function setupMissionScroll({
+  missionSection,
+  leftImg,
+  top2,
+  top,
+  topImg,
+  isVertical,
+}) {
+  const panelProp = isVertical ? 'y' : 'x'
+  const imgShift = isVertical ? { y: '-10%' } : { x: '-10%' }
+  const imgShiftEnd = isVertical ? { y: '-20%' } : { x: '-20%' }
+  const panelTravel = isVertical ? '-50vh' : '-50vw'
+  const imgPercentProp = isVertical ? 'yPercent' : 'xPercent'
+
+  gsap.set(leftImg, { x: 0, y: 0 })
+  gsap.set(top2, { x: 0, y: 0 })
+  gsap.set(top, { x: 0, y: 0, zIndex: 1 })
+  gsap.set(topImg, { xPercent: 0, yPercent: 0 })
+
   gsap.to(leftImg, {
-    x: '-10%',
+    ...imgShift,
     scrollTrigger: {
       trigger: missionSection,
-      start: 'top bottom', // Quand le top de la section arrive au bottom du viewport
-      end: 'top top', // Quand le top de la section arrive au top du viewport
-      scrub: true, // Lier l'animation au scroll
-      markers: false, // À mettre à true pour debug
+      start: 'top bottom',
+      end: 'top top',
+      scrub: true,
+      markers: false,
     },
   })
 
-  // Phase 2 : du top du viewport jusqu'à +100vh
   const missionPhase2 = gsap.timeline({
     defaults: {
       ease: 'none',
@@ -206,11 +222,9 @@ export function initAboutUs() {
 
   missionPhase2.fromTo(
     leftImg,
+    { ...imgShift },
     {
-      x: '-10%',
-    },
-    {
-      x: '-20%',
+      ...imgShiftEnd,
       immediateRender: false,
     },
     0
@@ -218,11 +232,9 @@ export function initAboutUs() {
 
   missionPhase2.fromTo(
     top2,
+    { [panelProp]: 0 },
     {
-      x: 0,
-    },
-    {
-      x: '-50vw',
+      [panelProp]: panelTravel,
       immediateRender: false,
     },
     0
@@ -239,12 +251,11 @@ export function initAboutUs() {
     invalidateOnRefresh: true,
     onUpdate: (self) => {
       const progress = gsap.utils.clamp(0, 1, self.progress)
-      const xPercent = gsap.utils.interpolate(0, -10, progress)
-      gsap.set(topImg, { xPercent })
+      const percent = gsap.utils.interpolate(0, -10, progress)
+      gsap.set(topImg, { [imgPercentProp]: percent })
     },
   })
 
-  // Phase 3 : poursuivre le mouvement avec .our-mission_top
   const missionPhase3 = gsap.timeline({
     defaults: {
       ease: 'none',
@@ -277,22 +288,18 @@ export function initAboutUs() {
 
   missionPhase3.fromTo(
     top,
+    { [panelProp]: 0 },
     {
-      x: 0,
-    },
-    {
-      x: '-50vw',
+      [panelProp]: panelTravel,
       immediateRender: false,
     }
   )
 
   missionPhase3.fromTo(
     topImg,
+    { [imgPercentProp]: -10 },
     {
-      xPercent: -10,
-    },
-    {
-      xPercent: -20,
+      [imgPercentProp]: -20,
       immediateRender: false,
     },
     0

@@ -264,11 +264,11 @@ function createFadeTransition() {
     async leave({ next }) {
       await ensureNextIsReady(next)
       const { transitionEl, clipRect } = getOrCreateTransitionElementsFromDOM()
-      const { start } = computeClipTargets()
+      const { start, viewportW, viewportH } = computeClipTargets()
       gsap.set(transitionEl, {
         display: 'none',
-        width: '100vw',
-        height: '100vh',
+        width: `${viewportW}px`,
+        height: `${viewportH}px`,
         justifyContent: 'center',
         alignItems: 'center',
       })
@@ -393,10 +393,10 @@ function createFadeTransition() {
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
-        minWidth: '100vw',
-        minHeight: '100vh',
+        width: `${viewportW}px`,
+        height: `${viewportH}px`,
+        minWidth: `${viewportW}px`,
+        minHeight: `${viewportH}px`,
         maxWidth: 'none',
         maxHeight: 'none',
         flex: '0 0 auto',
@@ -407,8 +407,8 @@ function createFadeTransition() {
 
       gsap.set(transitionEl, {
         display: 'flex',
-        width: '100vw',
-        height: '100vh',
+        width: `${viewportW}px`,
+        height: `${viewportH}px`,
         justifyContent: 'center',
         alignItems: 'center',
       })
@@ -661,8 +661,16 @@ function computeClipTargets() {
     ) || 16
   const emToPx = (em) => em * rootFontSize
 
-  const vw = window.innerWidth || 1440
-  const vh = window.innerHeight || 900
+  const vw =
+    document.documentElement.clientWidth ||
+    window.visualViewport?.width ||
+    window.innerWidth ||
+    1440
+  const vh =
+    document.documentElement.clientHeight ||
+    window.visualViewport?.height ||
+    window.innerHeight ||
+    900
 
   const midW = emToPx(22.5)
   const midH = emToPx(15)

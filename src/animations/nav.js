@@ -183,6 +183,7 @@ export function initNavMenuToggle() {
   const menuElement = document.querySelector('.menu')
   const openTrigger = document.querySelector('#menu-button')
   const closeTrigger = document.querySelector('.navlink.menu-close')
+  const mobileNavLinks = menuElement?.querySelectorAll('.nav__mobile__link')
   if (!menuElement || !openTrigger || !closeTrigger) return
 
   if (menuTimelineRef) return
@@ -213,8 +214,15 @@ export function initNavMenuToggle() {
     timeline.reverse()
   }
 
+  const handleMobileLinkClick = () => {
+    if (isTabletAndBelow()) timeline.reverse()
+  }
+
   openTrigger.addEventListener('click', handleOpen)
   closeTrigger.addEventListener('click', handleClose)
+  mobileNavLinks.forEach((link) => {
+    link.addEventListener('click', handleMobileLinkClick)
+  })
 
   menuTimelineRef = timeline
 }

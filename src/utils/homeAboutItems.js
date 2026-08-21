@@ -408,6 +408,48 @@ const MOBILE_ITEMS_CONFIG = [
   },
 ]
 
+const MOBILE_X_STOPS = [
+  [-26, -12, -14, 27],
+  [16, -7, 6, -19],
+  [-29, 27, -10, -7],
+  [-8, 21, 9, 18],
+  [-27, -23, 8, 16],
+  [30, -27, 11, 13],
+  [-25, -20, -12, -19],
+  [-7, 12, 4, -9],
+  [27, -21, 28, -30],
+  [-8, -21, 15, -15],
+  [-27, -7, 29, 2],
+  [5, -2, 20, -9],
+  [-15, 1, -18, -2],
+  [2, -18, -12, -7],
+  [-12, -25, -22, 6],
+  [15, -4, -23, 13],
+  [-26, -7, -22, 13],
+  [10, -4, -1, -21],
+  [-16, -15, 14, -7],
+  [-15, -30, 30, -16],
+  [-6, 10, 15, 17],
+  [-28, 16, -20, 29],
+  [-26, -13, 28, 18],
+  [0, -28, 20, -21],
+  [-11, 19, 11, -16],
+  [23, -12, -6, -1],
+  [-11, 7, 21, 17],
+  [-7, -26, -10, 23],
+]
+
+const MOBILE_ITEMS_WITH_X_STOPS = MOBILE_ITEMS_CONFIG.map((item, index) => {
+  const [stop1X, stop2X, stop3X, stop4X] = MOBILE_X_STOPS[index]
+  return {
+    ...item,
+    stop1: { ...item.stop1, transformX: stop1X },
+    stop2: { ...item.stop2, transformX: stop2X },
+    stop3: { ...item.stop3, transformX: stop3X },
+    stop4: { ...item.stop4, transformX: stop4X },
+  }
+})
+
 function getBreakpoint() {
   if (typeof window === 'undefined' || !window.matchMedia) {
     return 'desktop'
@@ -426,7 +468,7 @@ function getBreakpoint() {
 
 function getItemsConfigForBreakpoint(breakpoint) {
   let itemsConfig = BASE_ITEMS_CONFIG
-  if (breakpoint === 'mobile') itemsConfig = MOBILE_ITEMS_CONFIG
+  if (breakpoint === 'mobile') itemsConfig = MOBILE_ITEMS_WITH_X_STOPS
   if (breakpoint === 'tablet') itemsConfig = TABLET_ITEMS_CONFIG
   return applyAboutStopsOverrides(itemsConfig, breakpoint)
 }

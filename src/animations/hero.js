@@ -9,6 +9,13 @@ export function initHero() {
   const heading = document.querySelector('.section_hero h1')
   if (!heroImgWrapper || !heroImg || !heading) return
 
+  gsap.set(heroImg, { left: 0, xPercent: 0, x: 0 })
+
+  const getParallaxX = () => {
+    const extra = heroImg.offsetWidth - heroImgWrapper.clientWidth
+    return extra > 0 ? -extra : 0
+  }
+
   // Capture initial positions on load
   const startScrollY = window.scrollY || window.pageYOffset || 0
   const rect = heroImgWrapper.getBoundingClientRect()
@@ -38,7 +45,12 @@ export function initHero() {
       start: startPx,
       end: endPxBottom,
       scrub: true,
+      invalidateOnRefresh: true,
     },
   })
-  translateTl.to(heroImg, { x: '-5em' })
+  translateTl.fromTo(
+    heroImg,
+    { x: 0 },
+    { x: getParallaxX, immediateRender: false }
+  )
 }

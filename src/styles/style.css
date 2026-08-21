@@ -79,12 +79,18 @@
 
 .section.section_corporate {
   position: relative;
+  padding-bottom: 0;
 }
 
 .corporate-sticky-wrap {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100svh;
+}
+
+.section.section_corporate .corporate {
+  position: relative;
+  top: auto;
 }
 
 /* Corporate cards stacking animation */
@@ -120,6 +126,28 @@
 
 .corporate-content {
   height: 40em;
+}
+
+@media screen and (max-width: 767px) {
+  .section.section_corporate .corporate-content {
+    height: auto;
+  }
+
+  .section.section_corporate .corporate-cards_card.is-2 {
+    top: 1.3em;
+  }
+
+  .section.section_corporate .corporate-cards_card.is-3 {
+    top: 2.6em;
+  }
+
+  .section.section_corporate .corporate-cards_card.is-4 {
+    top: 3.9em;
+  }
+
+  .section.section_corporate .corporate-cards_card.is-5 {
+    top: 5.2em;
+  }
 }
 
 /* --- Ajustements Our Story --- */
@@ -471,4 +499,34 @@
   width: 100%;
   margin-top: 0.4rem;
   border-color: transparent;
+}
+
+@media screen and (max-width: 991px) {
+  .navbar {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .navbar .nav {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .navbar .nav-logo {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .navbar .nav__list__item.is-menu {
+    display: flex !important;
+  }
+
+  .navbar #menu-button {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }

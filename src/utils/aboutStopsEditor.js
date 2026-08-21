@@ -63,12 +63,13 @@ function createOption(value, label = value) {
 export function initAboutStopsEditor({ breakpoint, itemsConfig }) {
   if (
     typeof document === 'undefined' ||
-    breakpoint !== 'desktop' ||
+    !['desktop', 'mobile'].includes(breakpoint) ||
     document.querySelector('.about-stops-editor')
   ) {
     return
   }
 
+  const breakpointLabel = breakpoint === 'mobile' ? 'Mobile' : 'Desktop'
   const savedState = readJson(EDITOR_STATE_KEY, {
     itemId: 1,
     stop: 'stop1',
@@ -77,6 +78,9 @@ export function initAboutStopsEditor({ breakpoint, itemsConfig }) {
   const overrides = readJson(getStorageKey(breakpoint))
   let selectedItemId = Number(savedState.itemId) || 1
   let selectedStop = savedState.stop || 'stop1'
+  if (!itemsConfig.some((item) => item.id === selectedItemId)) {
+    selectedItemId = itemsConfig[0]?.id || 1
+  }
 
   const editor = document.createElement('aside')
   editor.className = 'about-stops-editor'
@@ -89,7 +93,7 @@ export function initAboutStopsEditor({ breakpoint, itemsConfig }) {
     <div class="about-stops-editor_panel">
       <div class="about-stops-editor_header">
         <div>
-          <p class="about-stops-editor_eyebrow">About / Desktop</p>
+          <p class="about-stops-editor_eyebrow">About / ${breakpointLabel}</p>
           <h2>Positions des images</h2>
         </div>
         <span class="about-stops-editor_status">Synchronisé</span>
