@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 import { listEasing } from '../utils/animationUtils.js'
+import { initScrollChapters } from '../utils/scrollCounter.js'
 import { initAboutHeadingTest } from './aboutHeadingTest.js'
 import { initAboutUs } from './aboutus.js'
 import { initCareers } from './careers.js'
@@ -28,6 +29,7 @@ const animationModules = [
   initHomeAbout,
   initAboutHeadingTest,
   initStickyParagraph,
+  initScrollChapters,
   initCareers,
   initAboutUs,
   initCompanies,

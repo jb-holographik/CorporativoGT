@@ -1,8 +1,6 @@
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-import { initScrollCounter } from '../utils/scrollCounter.js'
-
 gsap.registerPlugin(ScrollTrigger)
 
 let missionMatchMedia
@@ -117,9 +115,6 @@ export function initAboutUs() {
   // Animation des cartes corporatives qui se superposent
   initCorporateCardsAnimation()
 
-  // Initialiser le scroll counter pour la section "Our Story"
-  initScrollCounter('.section.section_our-story')
-
   const missionSection = document.querySelector('.section.section_our-mission')
   if (!missionSection) {
     if (missionMatchMedia) {
@@ -192,7 +187,11 @@ function setupMissionScroll({
   gsap.set(leftImg, { x: 0, y: 0 })
   gsap.set(top2, { x: 0, y: 0 })
   gsap.set(top, { x: 0, y: 0, zIndex: 1 })
-  gsap.set(topImg, { xPercent: 0, yPercent: 0 })
+  gsap.set(topImg, {
+    xPercent: 0,
+    yPercent: 0,
+    ...(isVertical ? { height: '125%', minHeight: '125%', flexShrink: 0 } : {}),
+  })
 
   gsap.to(leftImg, {
     ...imgShift,

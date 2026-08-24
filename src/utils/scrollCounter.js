@@ -3,37 +3,98 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
+const CHAPTER_SELECTOR = '[data-scroll-chapter], .our-story'
+const PINNED_SCROLL_VIEWPORTS = 5
+
+function resolveChapterRoot(target) {
+  if (typeof target === 'string') {
+    const match = document.querySelector(target)
+    if (!match) {
+      return null
+    }
+    if (match.matches(CHAPTER_SELECTOR)) {
+      return match
+    }
+    return match.querySelector(CHAPTER_SELECTOR)
+  }
+
+  if (target instanceof Element) {
+    if (target.matches(CHAPTER_SELECTOR)) {
+      return target
+    }
+    return target.querySelector(CHAPTER_SELECTOR)
+  }
+
+  return null
+}
+
+function getChapterScrollTriggerVars(root) {
+  const section = root.closest('.section') || root.parentElement || root
+  const extraTravel = (section?.offsetHeight || 0) - root.offsetHeight
+  const shouldPin = extraTravel < window.innerHeight * 0.75
+
+  if (shouldPin) {
+    return {
+      trigger: root,
+      start: 'top top',
+      end: () =>
+        `+=${Math.max(window.innerHeight * PINNED_SCROLL_VIEWPORTS, 1)}`,
+      scrub: true,
+      invalidateOnRefresh: true,
+      pin: true,
+      pinSpacing: true,
+    }
+  }
+
+  return {
+    trigger: section,
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: true,
+    invalidateOnRefresh: true,
+  }
+}
+
 /**
- * Initialise l'animation complète du scroll counter avec compteur mécanique et animations d'images
- * La section doit contenir:
- * - .our-story (conteneur sticky)
- * - .counter-right_slider, .counter-center_slider, .counter-left_slider (sliders du compteur)
- * - .our-story_image-2, .our-story_image-3, .our-story_image-4 (images à animer)
- *   ou .our-people_image-1 à .our-people_image-4 (nouveau naming)
- * - .our-story_content_left .p-small et .our-story_content_right .p-small (paragraphes texte)
- *
- * @param {string} sectionSelector - Sélecteur CSS de la section principale (ex: '.section.section_our-story')
+ * Initialise toutes les instances Scroll Chapter présentes dans la page.
+ * Branché sur [data-scroll-chapter] (composant Webflow) et .our-story (legacy).
  */
-export function initScrollCounter(sectionSelector) {
+export function initScrollChapters() {
   const hasDOM =
     typeof window !== 'undefined' && typeof document !== 'undefined'
   if (!hasDOM) {
     return
   }
 
-  let section = null
-  if (typeof sectionSelector === 'string') {
-    section = document.querySelector(sectionSelector)
-  } else if (sectionSelector instanceof Element) {
-    section = sectionSelector
+  document.querySelectorAll(CHAPTER_SELECTOR).forEach((root) => {
+    initScrollCounter(root)
+  })
+}
+
+/**
+ * Initialise l'animation complète du scroll counter avec compteur mécanique et animations d'images
+ * L'instance doit contenir:
+ * - le root sticky ([data-scroll-chapter] / .our-story)
+ * - .counter-right_slider, .counter-center_slider, .counter-left_slider (sliders du compteur)
+ * - .our-story_image-2, .our-story_image-3, .our-story_image-4 (images à animer)
+ *   ou .our-people_image-1 à .our-people_image-4 (nouveau naming)
+ * - .our-story_content_left .p-small et .our-story_content_right .p-small (paragraphes texte)
+ *
+ * @param {string|Element} target - Root du chapter, ou un ancêtre qui le contient
+ */
+export function initScrollCounter(target) {
+  const hasDOM =
+    typeof window !== 'undefined' && typeof document !== 'undefined'
+  if (!hasDOM) {
+    return
   }
 
-  if (!section) {
+  const root = resolveChapterRoot(target)
+  if (!root) {
     return
   }
 
   const requiredSelectors = {
-    sticky: '.our-story',
     rightSlider: '.counter-right_slider',
     centerSlider: '.counter-center_slider',
     leftSlider: '.counter-left_slider',
@@ -44,7 +105,7 @@ export function initScrollCounter(sectionSelector) {
   const missingSelectors = []
 
   Object.entries(requiredSelectors).forEach(([key, selector]) => {
-    const element = section.querySelector(selector)
+    const element = root.querySelector(selector)
     resolved[key] = element
     if (!element) {
       missingSelectors.push(selector)
@@ -55,22 +116,13 @@ export function initScrollCounter(sectionSelector) {
     return
   }
 
-  const { sticky, rightSlider, centerSlider, leftSlider, container } = resolved
-  const leftParagraph = section?.querySelector(
-    '.our-story_content_left .p-small'
-  )
-  const rightParagraph = section?.querySelector(
-    '.our-story_content_right .p-small'
-  )
+  const sticky = root
+  const { rightSlider, centerSlider, leftSlider, container } = resolved
+  const leftParagraph = root.querySelector('.our-story_content_left .p-small')
+  const rightParagraph = root.querySelector('.our-story_content_right .p-small')
+  const scrollTriggerVars = getChapterScrollTriggerVars(root)
 
-  if (
-    !section ||
-    !sticky ||
-    !rightSlider ||
-    !centerSlider ||
-    !leftSlider ||
-    !container
-  ) {
+  if (!sticky || !rightSlider || !centerSlider || !leftSlider || !container) {
     return
   }
 
@@ -90,9 +142,7 @@ export function initScrollCounter(sectionSelector) {
     return digitHeight
   }
 
-  // Prépare les bornes de fenêtrage
-  let linesTween = null
-  let linesTrigger = null
+  let chapterTween = null
 
   // Utilitaire: split un paragraphe en lignes visibles et retourne les covers ajoutés
   const splitIntoLinesWithCovers = (paragraph) => {
@@ -149,13 +199,27 @@ export function initScrollCounter(sectionSelector) {
     })()
 
     groups.forEach((grp) => {
+      const hasText = grp.some((n) => (n.textContent || '').trim())
+      if (!hasText) {
+        return
+      }
+
       const lineWrap = document.createElement('span')
       lineWrap.className = 'our-story_line-wrap'
       lineWrap.style.display = 'block'
       lineWrap.style.position = 'relative'
+      lineWrap.style.width = 'fit-content'
+      lineWrap.style.maxWidth = '100%'
       // Déplacer les tokens dans le wrapper
       grp[0].parentNode.insertBefore(lineWrap, grp[0])
       grp.forEach((n) => lineWrap.appendChild(n))
+      lineWrap.style.whiteSpace = 'nowrap'
+      const words = grp.filter((n) => (n.textContent || '').trim())
+      if (words.length) {
+        const left = words[0].getBoundingClientRect().left
+        const right = words[words.length - 1].getBoundingClientRect().right
+        lineWrap.style.width = `${Math.ceil(right - left)}px`
+      }
       // Cover
       const cover = document.createElement('span')
       cover.className = 'our-story_line-cover'
@@ -180,147 +244,6 @@ export function initScrollCounter(sectionSelector) {
     return covers
   }
 
-  const buildLinesAnimation = () => {
-    if (linesTween) {
-      linesTween.kill()
-      linesTween = null
-    }
-    if (linesTrigger) {
-      linesTrigger.kill()
-      linesTrigger = null
-    }
-    const coversLeft = splitIntoLinesWithCovers(leftParagraph)
-    const coversRight = splitIntoLinesWithCovers(rightParagraph)
-    const covers = [...coversLeft, ...coversRight]
-    if (covers.length === 0) return
-    // Dépassement de 10% vers la gauche pour que le début du dégradé (0-10%) soit hors champ
-    gsap.set(covers, { width: '110%' })
-    // Timeline séquentielle (l'une après l'autre) sur toute la durée du sticky
-    const tl = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: {
-        trigger: section,
-        start: 'top top',
-        end: 'bottom bottom',
-        scrub: true,
-        invalidateOnRefresh: true,
-      },
-    })
-    covers.forEach((cv) => {
-      tl.fromTo(cv, { width: '110%' }, { width: 0, duration: 1 })
-    })
-    linesTween = tl
-    linesTrigger = tl.scrollTrigger
-  }
-
-  // Animation synchronisée des 3 sliders pour compter de 0 à 100 avec glissement fluide
-  // Système mécanique: slider droit glisse continuellement, autres avancent par étapes
-  const createCounterAnimation = () => {
-    const dh = getDigitHeight()
-    if (dh === 0) return // Attendre que la hauteur soit disponible
-
-    // Timeline GSAP avec scrub pour créer un glissement fluide synchronisé au scroll
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: section,
-        start: 'top top',
-        end: 'bottom bottom',
-        scrub: true,
-        invalidateOnRefresh: true,
-        onRefreshInit: () => {
-          gsap.set([rightSlider, centerSlider, leftSlider], { y: 0 })
-          buildLinesAnimation()
-        },
-      },
-    })
-
-    // Animation du slider droit (unités): glisse continuellement de 0 à 100 (101 chiffres)
-    tl.to(
-      rightSlider,
-      {
-        y: -100 * dh,
-        duration: 1,
-        ease: 'none',
-      },
-      0
-    )
-
-    // Animation du slider centre: glisse dès que le 9 commence à sortir
-    for (let i = 0; i < 10; i++) {
-      const startPosition = (i + 1) * 0.1 - 0.01 // Position: 0.09, 0.19, 0.29, ..., 0.99
-      tl.to(
-        centerSlider,
-        {
-          y: -(i + 1) * dh,
-          duration: 0.01,
-          ease: 'none',
-        },
-        startPosition
-      )
-    }
-
-    // Animation du slider gauche: glisse à 99% (quand le 9 du centre commence à sortir)
-    tl.to(
-      leftSlider,
-      {
-        y: -1 * dh,
-        duration: 0.01,
-        ease: 'none',
-      },
-      0.99
-    )
-  }
-
-  // S'assurer que la hauteur du digit est calculée quand les éléments sont visibles
-  const initCounterAnimation = () => {
-    if (getDigitHeight() > 0) {
-      createCounterAnimation()
-    } else {
-      // Réessayer après un court délai
-      setTimeout(initCounterAnimation, 100)
-    }
-  }
-
-  // Initialiser l'animation du compteur
-  initCounterAnimation()
-
-  // Fonction réutilisable pour animer les images avec scale 0 -> 1
-  // startProgress: moment de départ (0 = début, 1 = fin)
-  // endProgress: moment de fin (0 = début, 1 = fin)
-  const animateImage = (image, startProgress = 0, endProgress = 1) => {
-    if (!image) return
-
-    // Créer une timeline séparée pour cette image
-    gsap.fromTo(
-      image,
-      { scale: 0, transformOrigin: '50% 50%' },
-      {
-        scale: 1,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: true,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            const progress = self.progress
-            // Calculer si nous sommes dans la plage d'animation pour cette image
-            if (progress >= startProgress && progress <= endProgress) {
-              const imageProgress =
-                (progress - startProgress) / (endProgress - startProgress)
-              gsap.set(image, { scale: imageProgress })
-            } else if (progress < startProgress) {
-              gsap.set(image, { scale: 0 })
-            } else {
-              gsap.set(image, { scale: 1 })
-            }
-          },
-        },
-      }
-    )
-  }
-
   const imageSelectorSets = [
     [
       '.our-story_image-1',
@@ -340,24 +263,105 @@ export function initScrollCounter(sectionSelector) {
     imageSelectorSets
       .map((selectors) =>
         selectors
-          .map((sel) => section.querySelector(sel))
+          .map((sel) => root.querySelector(sel))
           .filter((img) => img instanceof HTMLElement)
       )
       .find((set) => set.length > 0) || []
 
-  if (imagesToAnimate.length) {
-    const [staticImage, ...animatedImages] = imagesToAnimate
-    if (staticImage) {
-      gsap.set(staticImage, { scale: 1 })
-    }
-    if (!animatedImages.length) {
-      return
-    }
-    const segment = 1 / animatedImages.length
-    animatedImages.forEach((image, index) => {
-      const start = segment * index
-      const end = segment * (index + 1)
-      animateImage(image, start, end)
-    })
+  const staticImage = imagesToAnimate[0] || null
+  const animatedImages = imagesToAnimate.slice(1)
+
+  if (staticImage) {
+    gsap.set(staticImage, { scale: 1, transformOrigin: '50% 50%' })
   }
+  animatedImages.forEach((image) => {
+    gsap.set(image, { scale: 0, transformOrigin: '50% 50%' })
+  })
+
+  const buildChapterTimeline = () => {
+    if (chapterTween) {
+      chapterTween.scrollTrigger?.kill()
+      chapterTween.kill()
+      chapterTween = null
+    }
+
+    const covers = [
+      ...splitIntoLinesWithCovers(leftParagraph),
+      ...splitIntoLinesWithCovers(rightParagraph),
+    ]
+    const dh = getDigitHeight()
+
+    const tl = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        ...scrollTriggerVars,
+        onRefreshInit: () => {
+          digitHeight = 0
+        },
+      },
+    })
+
+    if (covers.length) {
+      const lineWidths = covers.map((cv) => {
+        const wrap = cv.parentElement
+        return Math.max(wrap?.getBoundingClientRect().width || 0, 1)
+      })
+      const totalWidth = lineWidths.reduce((sum, width) => sum + width, 0)
+      let time = 0
+      covers.forEach((cv, index) => {
+        const duration = lineWidths[index] / totalWidth
+        const fromWidth = lineWidths[index] * 1.1
+        gsap.set(cv, { width: fromWidth })
+        tl.fromTo(
+          cv,
+          { width: fromWidth },
+          { width: 0, duration, immediateRender: index === 0 },
+          time
+        )
+        time += duration
+      })
+    } else {
+      tl.to({}, { duration: 1 })
+    }
+
+    if (dh > 0) {
+      gsap.set([rightSlider, centerSlider, leftSlider], { y: 0 })
+      tl.to(rightSlider, { y: () => -100 * getDigitHeight(), duration: 1 }, 0)
+      for (let i = 0; i < 10; i++) {
+        tl.to(
+          centerSlider,
+          {
+            y: () => -(i + 1) * getDigitHeight(),
+            duration: 0.01,
+          },
+          (i + 1) * 0.1 - 0.01
+        )
+      }
+      tl.to(leftSlider, { y: () => -getDigitHeight(), duration: 0.01 }, 0.99)
+    }
+
+    if (animatedImages.length) {
+      const segment = 1 / animatedImages.length
+      animatedImages.forEach((image, index) => {
+        tl.fromTo(
+          image,
+          { scale: 0 },
+          { scale: 1, duration: segment, immediateRender: false },
+          segment * index
+        )
+      })
+    }
+
+    chapterTween = tl
+  }
+
+  const initChapterTimeline = () => {
+    if (getDigitHeight() > 0) {
+      buildChapterTimeline()
+    } else {
+      setTimeout(initChapterTimeline, 100)
+    }
+  }
+
+  initChapterTimeline()
 }
