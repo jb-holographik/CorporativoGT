@@ -526,6 +526,54 @@
     width: 15em;
     flex: 0 0 15em;
   }
+
+  .careers {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-column-gap: 1em;
+    grid-row-gap: 1em;
+    width: 100%;
+    padding-left: 2em;
+    padding-right: 2em;
+  }
+
+  .careers .careers-inner,
+  #w-node-_210787b0-34d1-ca25-3bf7-4838302101df-f8e6f411 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 1;
+    grid-column: 1 / 13;
+    grid-row: auto;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .careers-p {
+    position: relative;
+    z-index: 3;
+    width: 20em;
+  }
+
+  .careers-circle {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .careers-circle_circle {
+    width: 100%;
+    height: 100%;
+  }
+
+  .circle-img {
+    width: 6.25em;
+    height: 8.75em;
+  }
 }
 
 .section_commitment .commitment-title {
@@ -677,6 +725,199 @@
     width: calc(100% - 2em);
     height: calc(100vh - 21em);
     top: 21em;
+  }
+
+  [data-barba-namespace='careers'] .hero-img_img,
+  [data-barba-namespace='contact'] .hero-img_img {
+    width: 100%;
+  }
+
+  [data-barba-namespace='careers'] h1,
+  [data-barba-namespace='contact'] h1 {
+    font-size: 3.5em;
+    line-height: 0.9;
+  }
+
+  [data-barba-namespace='careers'] .eyebrow-wrap.is-right,
+  [data-barba-namespace='contact'] .eyebrow-wrap.is-right {
+    display: none;
+  }
+
+  [data-barba-namespace='careers'] .hero_content .grid-12:last-of-type,
+  [data-barba-namespace='contact'] .hero_content .grid-12:last-of-type {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  [data-barba-namespace='careers'] .section_next-page {
+    display: none;
+  }
+
+  .section.section_philosophy {
+    min-height: 0;
+    padding-bottom: 9.625em;
+    gap: 9.625em;
+    grid-column-gap: 9.625em;
+    grid-row-gap: 9.625em;
+    overflow-x: clip;
+  }
+
+  .section.section_philosophy .intro_p,
+  .section.section_contact .intro_p {
+    font-size: 2em;
+    line-height: 1;
+  }
+
+  .careers {
+    display: flex;
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .careers-inner {
+    flex: none;
+    width: 32.25em;
+    aspect-ratio: 1;
+  }
+
+  .careers-p {
+    width: 22.375em;
+  }
+
+  .careers-p p {
+    font-size: 1.25em;
+    line-height: 1.1;
+  }
+
+  .circle-img {
+    width: 3.042em;
+    height: 4.259em;
+  }
+
+  .section.section_our-offer,
+  .section.section_people {
+    padding-bottom: 2em;
+  }
+
+  .our-offer {
+    padding-left: 1em;
+    padding-right: 1em;
+  }
+
+  .our-offer_inner {
+    display: flex;
+    flex-direction: column;
+    padding-top: 1em;
+    gap: 4.8em;
+    grid-column-gap: 4.8em;
+    grid-row-gap: 4.8em;
+  }
+
+  .our-offer_inner h2,
+  .our-offer_inner .is-lh-90 {
+    width: 100%;
+    font-size: 3.5em;
+    line-height: 0.9;
+  }
+
+  .our-offer_list {
+    width: 100%;
+  }
+
+  .our-offer_list-item p {
+    font-size: 1.25em;
+    line-height: 1.3;
+  }
+
+  .section.section_contact {
+    display: flex;
+    flex-direction: column;
+    min-height: 44.6875em;
+    padding-top: 0;
+  }
+
+  .section.section_contact .intro {
+    padding-top: 1em;
+  }
+
+  .contact {
+    display: flex;
+    width: 100%;
+    margin-top: auto;
+    margin-bottom: auto;
+    padding-top: 0;
+    padding-bottom: 0;
+    justify-content: center;
+  }
+
+  .contact-link {
+    font-size: 1.625em;
+    letter-spacing: -0.01em;
+    text-align: center;
+  }
+}
+
+[data-barba-namespace='contact'] .grid-12.is-contact-grid {
+  padding-left: 2em;
+  padding-right: 2em;
+}
+
+[data-barba-namespace='contact'] .informations {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5em;
+  width: 100%;
+  grid-column: 7 / 12;
+}
+
+[data-barba-namespace='contact'] .informations_item {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+  width: 100%;
+}
+
+[data-barba-namespace='contact'] .informations_lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2em;
+}
+
+[data-barba-namespace='contact'] .informations_p {
+  font-size: 1.5em;
+  line-height: 1.1;
+  margin: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+[data-barba-namespace='contact'] .section.section_philosophy.is-contact {
+  min-height: 0;
+  padding-bottom: 16em;
+  gap: 12em;
+}
+
+@media screen and (max-width: 767px) {
+  [data-barba-namespace='contact'] .grid-12.is-contact-grid {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  [data-barba-namespace='contact'] .informations {
+    grid-column: 1 / -1;
+    padding-left: 1em;
+    padding-right: 1em;
+  }
+
+  [data-barba-namespace='contact'] .informations_p {
+    font-size: 1.25em;
+  }
+
+  [data-barba-namespace='contact'] .section.section_philosophy.is-contact {
+    padding-bottom: 9.625em;
+    gap: 9.625em;
   }
 }
 
