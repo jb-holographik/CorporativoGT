@@ -8,6 +8,36 @@ import { initAboutItemsData } from '../utils/homeAboutItems.js'
 gsap.registerPlugin(ScrollTrigger)
 gsap.registerPlugin(Flip)
 
+function collectImageUrls(img) {
+  const urls = []
+  const src = img.getAttribute('src')
+  if (src) urls.push(src)
+  if (img.currentSrc) urls.push(img.currentSrc)
+  return urls
+}
+
+function preloadAboutSectionImages(section) {
+  if (!section || section.dataset.aboutImagesPreloaded === 'true') return
+  section.dataset.aboutImagesPreloaded = 'true'
+
+  const images = section.querySelectorAll('img[src]')
+  const urls = new Set()
+
+  images.forEach((img) => {
+    img.loading = 'eager'
+    collectImageUrls(img).forEach((url) => urls.add(url))
+    if (typeof img.decode === 'function') {
+      img.decode().catch(() => {})
+    }
+  })
+
+  urls.forEach((url) => {
+    const preloader = new Image()
+    preloader.decoding = 'async'
+    preloader.src = url
+  })
+}
+
 // Reusable: freeze an element in place and FLIP it to match a target's bounds
 export function freezeAndFlipToTarget({
   itemEl,
@@ -126,6 +156,9 @@ export function initHomeAbout() {
   if (!sections.length) return
 
   sections.forEach((section) => {
+    if (section.classList.contains('section_about')) {
+      requestAnimationFrame(() => preloadAboutSectionImages(section))
+    }
     initHomeAboutSection({ section, isMobileLayout, isTabletLayout })
   })
 }
