@@ -1,8 +1,3 @@
-import {
-  applyAboutStopsOverrides,
-  initAboutStopsEditor,
-} from './aboutStopsEditor.js'
-
 const BASE_ITEMS_CONFIG = [
   {
     id: 1,
@@ -470,32 +465,7 @@ function getItemsConfigForBreakpoint(breakpoint) {
   let itemsConfig = BASE_ITEMS_CONFIG
   if (breakpoint === 'mobile') itemsConfig = MOBILE_ITEMS_WITH_X_STOPS
   if (breakpoint === 'tablet') itemsConfig = TABLET_ITEMS_CONFIG
-  return applyAboutStopsOverrides(itemsConfig, breakpoint)
-}
-
-function ensureBadge(element, id) {
-  if (!element) return
-  const existing = element.querySelector('.about-item_badge')
-  if (existing) {
-    existing.textContent = id
-    return
-  }
-  const badge = document.createElement('div')
-  badge.className = 'about-item_badge'
-  badge.textContent = id
-  element.appendChild(badge)
-}
-
-function ensureAllItemBadges(root, itemClass) {
-  root.querySelectorAll(`.${itemClass}`).forEach((element, index) => {
-    const numberedClass = Array.from(element.classList).find((className) =>
-      /^is-\d+$/.test(className)
-    )
-    const id = numberedClass
-      ? Number(numberedClass.replace('is-', ''))
-      : index + 1
-    ensureBadge(element, id)
-  })
+  return itemsConfig
 }
 
 export function initAboutItemsData(root = document) {
@@ -503,7 +473,6 @@ export function initAboutItemsData(root = document) {
   const itemsConfig = getItemsConfigForBreakpoint(breakpoint)
   const itemClass =
     breakpoint === 'desktop' ? 'about-item' : 'about-item_mobile'
-  ensureAllItemBadges(root, itemClass)
 
   // Configuration des sliders (desktop horizontal, mobile/tablette vertical)
   // Chaque stop = 1 image entière (~8em desktop, ~7.75em mobile)
@@ -542,10 +511,6 @@ export function initAboutItemsData(root = document) {
       sliderStop4: sliderConfig.stop4,
     }
   })
-
-  if (import.meta.env.DEV) {
-    initAboutStopsEditor({ breakpoint, itemsConfig })
-  }
 
   return items
 }
