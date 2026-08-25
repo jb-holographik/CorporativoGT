@@ -139,6 +139,10 @@
 [data-scroll-chapter],
 .our-story {
   display: grid;
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  max-height: 100svh;
   grid-template-rows: auto minmax(0, 1fr) auto;
   justify-items: center;
   align-items: stretch;
@@ -179,7 +183,8 @@
 
 [data-scroll-chapter] .counter-percent,
 .our-story .counter-percent {
-  margin-top: 0;
+  margin-top: 0.2em;
+  margin-left: -0.1em;
   align-self: flex-start;
 }
 
@@ -190,6 +195,7 @@
 .our-story .counter-center,
 .our-story .counter-right {
   flex: 0 0 auto;
+  height: 6.4em;
   overflow: hidden;
 }
 
@@ -256,6 +262,21 @@
     text-align: center;
   }
 
+  [data-scroll-chapter] .counter-percent,
+  .our-story .counter-percent {
+    margin-top: 0.2em;
+    margin-left: 0.1em;
+  }
+
+  [data-scroll-chapter] .counter-left,
+  [data-scroll-chapter] .counter-center,
+  [data-scroll-chapter] .counter-right,
+  .our-story .counter-left,
+  .our-story .counter-center,
+  .our-story .counter-right {
+    height: 3.8em;
+  }
+
   [data-scroll-chapter] > h2,
   [data-scroll-chapter] .our-story_heading,
   .our-story > h2,
@@ -273,6 +294,8 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    min-height: 0;
+    height: 100%;
   }
 
   [data-scroll-chapter] .our-story_content_left,
@@ -365,11 +388,41 @@
     padding-right: 1em;
   }
 
+  [data-scroll-chapter] .counter-percent,
+  .our-story .counter-percent {
+    margin-top: 0em;
+    margin-left: 0.05em;
+  }
+
+  [data-scroll-chapter] .counter-left,
+  [data-scroll-chapter] .counter-center,
+  [data-scroll-chapter] .counter-right,
+  .our-story .counter-left,
+  .our-story .counter-center,
+  .our-story .counter-right {
+    height: 2.8em;
+  }
+
+  [data-scroll-chapter] .our-story_content,
+  .our-story .our-story_content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    justify-items: center;
+    align-items: center;
+    min-height: 0;
+    height: 100%;
+    container-type: size;
+  }
+
   [data-scroll-chapter] .our-story_content_center,
-  .our-story .our-story_content_center {
-    width: calc(50% - 0.5em);
-    max-width: calc(50% - 0.5em);
+  [data-scroll-chapter] .our-people_content_center,
+  .our-story .our-story_content_center,
+  .our-story .our-people_content_center {
+    width: min(calc(50cqw - 0.5em), calc(100cqh * 600 / 973));
     height: auto;
+    max-width: calc(50cqw - 0.5em);
+    max-height: 100cqh;
     min-width: 0;
     min-height: 0;
     margin-left: auto;
@@ -378,6 +431,51 @@
     aspect-ratio: 600 / 973;
     align-self: center;
     justify-self: center;
+    overflow: hidden;
+  }
+
+  [data-scroll-chapter] .our-people_content_center,
+  .our-story .our-people_content_center {
+    width: min(calc(50cqw - 0.5em), calc(100cqh * 600 / 802));
+    aspect-ratio: 600 / 802;
+  }
+
+  [data-scroll-chapter] .our-story_image-1,
+  [data-scroll-chapter] .our-story_image-2,
+  [data-scroll-chapter] .our-story_image-3,
+  [data-scroll-chapter] .our-story_image-4,
+  .our-story .our-story_image-1,
+  .our-story .our-story_image-2,
+  .our-story .our-story_image-3,
+  .our-story .our-story_image-4,
+  [data-scroll-chapter] .our-people_image-1,
+  [data-scroll-chapter] .our-people_image-2,
+  [data-scroll-chapter] .our-people_image-3,
+  [data-scroll-chapter] .our-people_image-4,
+  .our-story .our-people_image-1,
+  .our-story .our-people_image-2,
+  .our-story .our-people_image-3,
+  .our-story .our-people_image-4 {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  [data-scroll-chapter] .our-people_image-1,
+  .our-story .our-people_image-1 {
+    transform: translate(0, 0);
+  }
+
+  [data-scroll-chapter] .our-people_image-2,
+  [data-scroll-chapter] .our-people_image-3,
+  [data-scroll-chapter] .our-people_image-4,
+  .our-story .our-people_image-2,
+  .our-story .our-people_image-3,
+  .our-story .our-people_image-4 {
+    transform: translate(0, 0) scale(0);
   }
 
   .our-mission_top_img {
@@ -670,10 +768,10 @@
   .section_commitment .commitment-card_content {
     display: flex;
     flex-direction: column;
-    padding: 1em 1em 5.5em;
-    gap: 5.5em;
-    grid-column-gap: 5.5em;
-    grid-row-gap: 5.5em;
+    padding: 1rem 1rem 5.5rem;
+    gap: 5.5rem;
+    grid-column-gap: 5.5rem;
+    grid-row-gap: 5.5rem;
   }
 
   .section_commitment .commitment-title,
@@ -683,6 +781,18 @@
 
   .section_commitment .commitment-title {
     flex-direction: column;
+    gap: 1rem;
+    grid-column-gap: 1rem;
+    grid-row-gap: 1rem;
+  }
+
+  .section_commitment .commitment-list_item {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .section_commitment .commitment-list_item:first-of-type {
+    padding-top: 0;
   }
 
   .section_commitment .commitment-title_index,
