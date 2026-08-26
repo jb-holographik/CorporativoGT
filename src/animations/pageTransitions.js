@@ -368,36 +368,6 @@ function createFadeTransition() {
       }
       transitionInner.appendChild(maskWrapper)
 
-      // Debug positioning
-      const logDebug = () => {
-        const el = heroClone || pageContent
-        const rect = el?.getBoundingClientRect()
-        const style = el ? window.getComputedStyle(el) : null
-        const clipAttr = clipRect
-          ? {
-              x: clipRect.getAttribute('x'),
-              y: clipRect.getAttribute('y'),
-              w: clipRect.getAttribute('width'),
-              h: clipRect.getAttribute('height'),
-            }
-          : null
-        console.log('[barba-mask-debug]', {
-          tag: el?.tagName,
-          rect,
-          style: style
-            ? {
-                top: style.top,
-                left: style.left,
-                width: style.width,
-                height: style.height,
-                transform: style.transform,
-              }
-            : null,
-          clipAttr,
-          parent: el?.parentElement?.className,
-        })
-      }
-
       gsap.set(pageContent, {
         position: 'absolute',
         top: 0,
@@ -459,7 +429,6 @@ function createFadeTransition() {
               y: targetY,
               duration: 0.8,
               ease: listEasing,
-              onUpdate: logDebug,
             }),
             eyebrows.length
               ? gsap.to(eyebrows, {
@@ -528,7 +497,6 @@ function createFadeTransition() {
       if (heroClone && heroClone.parentNode) {
         heroClone.parentNode.removeChild(heroClone)
       }
-      logDebug()
     },
   }
 }
