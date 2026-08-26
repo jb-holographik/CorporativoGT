@@ -3,10 +3,19 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
+function prioritizeHeroImage(img) {
+  if (!img) return
+  img.setAttribute('loading', 'eager')
+  img.loading = 'eager'
+  img.setAttribute('fetchpriority', 'high')
+  if ('fetchPriority' in img) img.fetchPriority = 'high'
+}
+
 export function initHero() {
   const heroImgWrapper = document.querySelector('.hero-img')
   const heroImg = document.querySelector('.hero-img_img')
   const heading = document.querySelector('.section_hero h1')
+  prioritizeHeroImage(heroImg)
   if (!heroImgWrapper || !heroImg || !heading) return
 
   gsap.set(heroImg, { left: 0, xPercent: 0, x: 0 })

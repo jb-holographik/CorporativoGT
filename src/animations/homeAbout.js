@@ -16,19 +16,17 @@ function collectImageUrls(img) {
   return urls
 }
 
-function preloadAboutSectionImages(section) {
-  if (!section || section.dataset.aboutImagesPreloaded === 'true') return
-  section.dataset.aboutImagesPreloaded = 'true'
-
-  const images = section.querySelectorAll('img[src]')
+function preloadAboutItemImages(items) {
   const urls = new Set()
 
-  images.forEach((img) => {
-    img.loading = 'eager'
-    collectImageUrls(img).forEach((url) => urls.add(url))
-    if (typeof img.decode === 'function') {
-      img.decode().catch(() => {})
-    }
+  items.forEach((item) => {
+    item.querySelectorAll('img[src]').forEach((img) => {
+      img.loading = 'eager'
+      collectImageUrls(img).forEach((url) => urls.add(url))
+      if (typeof img.decode === 'function') {
+        img.decode().catch(() => {})
+      }
+    })
   })
 
   urls.forEach((url) => {
@@ -36,6 +34,37 @@ function preloadAboutSectionImages(section) {
     preloader.decoding = 'async'
     preloader.src = url
   })
+}
+
+function preloadAboutSectionImages(section) {
+  if (!section || section.dataset.aboutImagesPreloaded === 'true') return
+
+  const start = () => {
+    if (section.dataset.aboutImagesPreloaded === 'true') return
+    section.dataset.aboutImagesPreloaded = 'true'
+
+    const items = Array.from(
+      section.querySelectorAll('.about-item, .about-item_mobile')
+    ).slice(0, 2)
+
+    preloadAboutItemImages(items)
+  }
+
+  if (typeof IntersectionObserver === 'undefined') {
+    start()
+    return
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect()
+        start()
+      }
+    },
+    { rootMargin: '400px 0px' }
+  )
+  observer.observe(section)
 }
 
 // Reusable: freeze an element in place and FLIP it to match a target's bounds

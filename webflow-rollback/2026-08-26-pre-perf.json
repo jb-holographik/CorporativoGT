@@ -1,0 +1,85 @@
+{
+  "savedAt": "2026-08-26T15:00:00Z",
+  "purpose": "Snapshot before LCP/perf changes. Restore code with git; restore Webflow with the values below.",
+  "git": {
+    "restore": "git checkout main && git restore .",
+    "commit": "50d786bc18763383277734cdaf36678e910e428a",
+    "branch": "main",
+    "note": "This work lives on branch perf/lighthouse-lcp-and-js-split. main is unchanged."
+  },
+  "webflow": {
+    "siteId": "690c7fa39e169cfac038b0d9",
+    "siteFreeform": {
+      "head": "",
+      "footer": "<!--\n<script type=\"module\" src=\"http://localhost:3000/@vite/client\"></script>\n<script type=\"module\" src=\"http://localhost:3000/src/main.js\"></script>\n-->\n\n<script src=\"https://corporativogt.netlify.app/main.js\"></script>\n"
+    },
+    "pages": {
+      "home": {
+        "pageId": "690c7fa59e169cfac038b157",
+        "freeform": { "head": "", "footer": "" }
+      }
+    },
+    "heroImages": [
+      {
+        "page": "home",
+        "pageId": "690c7fa59e169cfac038b157",
+        "element": {
+          "component": "690c7fa59e169cfac038b157",
+          "element": "d31f04be-4f45-98c2-f68f-2dd19dde2722"
+        },
+        "attributes": []
+      },
+      {
+        "page": "about-us",
+        "pageId": "691498aa8bce5cbe7460b959",
+        "element": {
+          "component": "691498aa8bce5cbe7460b959",
+          "element": "d31f04be-4f45-98c2-f68f-2dd19dde2722"
+        },
+        "attributes": []
+      },
+      {
+        "page": "our-companies",
+        "pageId": "69119db5c1295e0499859e21",
+        "element": {
+          "component": "69119db5c1295e0499859e21",
+          "element": "d31f04be-4f45-98c2-f68f-2dd19dde2722"
+        },
+        "attributes": []
+      },
+      {
+        "page": "social-impact",
+        "pageId": "691b0b4124c9a4c4cad56840",
+        "element": {
+          "component": "691b0b4124c9a4c4cad56840",
+          "element": "d31f04be-4f45-98c2-f68f-2dd19dde2722"
+        },
+        "attributes": []
+      },
+      {
+        "page": "careers",
+        "pageId": "691c4809baa50926f8e6f411",
+        "element": {
+          "component": "691c4809baa50926f8e6f411",
+          "element": "d31f04be-4f45-98c2-f68f-2dd19dde2722"
+        },
+        "attributes": []
+      },
+      {
+        "page": "contact",
+        "pageId": "6a8d63e93194a4d11d0c8e8c",
+        "element": {
+          "component": "6a8d63e93194a4d11d0c8e8c",
+          "element": "e506842f-16d7-95f8-d800-5eb54f302e0c"
+        },
+        "attributes": []
+      }
+    ],
+    "restoreNotes": [
+      "Site custom code: set footer back to siteFreeform.footer (classic script, no type=module).",
+      "Home page custom code: set head back to empty string.",
+      "Each hero image: set attributes to [] (clears loading=eager and fetchpriority=high).",
+      "Publish the Webflow subdomain after restoring."
+    ]
+  }
+}
