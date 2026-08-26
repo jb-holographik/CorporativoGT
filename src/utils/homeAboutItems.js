@@ -469,6 +469,8 @@ function getItemsConfigForBreakpoint(breakpoint) {
 }
 
 export function initAboutItemsData(root = document) {
+  root.querySelectorAll('.about-item_badge').forEach((badge) => badge.remove())
+
   const breakpoint = getBreakpoint()
   const itemsConfig = getItemsConfigForBreakpoint(breakpoint)
   const itemClass =

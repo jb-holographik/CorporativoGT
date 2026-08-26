@@ -167,15 +167,19 @@ export function initCompanies() {
             gsap.set(targetItem, { zIndex: 4 })
 
             // Supprimer le clone
-            gsap.delayedCall(0, () => {
-              clone.remove()
+            requestAnimationFrame(() => {
+              gsap.killTweensOf(clone)
+              if (clone.parentNode) clone.remove()
             })
             // Nettoyer les anciens clones obsolètes
             companiesList
               .querySelectorAll(
                 '[data-clone="true"]:not([data-clone-id="' + cloneId + '"])'
               )
-              .forEach((n) => n.remove())
+              .forEach((n) => {
+                gsap.killTweensOf(n)
+                n.remove()
+              })
           },
         }
       )
@@ -335,7 +339,7 @@ export function initCompanies() {
       return clone
     }
 
-    if (!isTabletOrMobile) {
+    if (!isTabletOrMobile && imagesContainer) {
       // Mettre TOUTES les images en position: absolute à leur position exacte (desktop uniquement)
       // Calculer le left de chaque image en accumulant les largeurs + gaps du flex
       const computedStyle = getComputedStyle(imagesContainer)
@@ -850,141 +854,149 @@ export function initCompanies() {
               '.companies_s-item:not([data-clone="true"])'
             ) || null
           const targetFirst = firstCompanyItem || fallbackFirst
-          if (!targetFirst) return
-          // Contexte: clip et positionnement, conserver les clones existants pour la superposition
-          gsap.set(companiesList, { overflow: 'hidden', position: 'relative' })
-          const priorClonesClose = companiesList.querySelectorAll(
-            '[data-clone="true"]'
-          )
-          if (priorClonesClose.length) {
-            priorClonesClose.forEach((n) =>
-              gsap.set(n, { zIndex: 1, pointerEvents: 'none' })
-            )
-          }
-          // Trouver l'ancien item actif dans cette liste
-          const oldActiveItem = companiesList.querySelector(
-            '.companies_s-item.is-active'
-          )
-          if (oldActiveItem && oldActiveItem !== targetFirst) {
-            gsap.set(oldActiveItem, { zIndex: 1 })
-          }
-
-          // Si data-item="1" est déjà actif ET qu'aucun clone n'est en cours, on ne lance pas de clone
-          const hasInFlightClones =
-            companiesList.querySelector('[data-clone="true"]') != null
-          const shouldSkipClone =
-            oldActiveItem &&
-            (oldActiveItem === targetFirst ||
-              oldActiveItem.dataset.item === '1') &&
-            !hasInFlightClones
-          if (!shouldSkipClone) {
-            // Assurer le clipping et un contexte de positionnement pour le clone
+          if (targetFirst) {
+            // Contexte: clip et positionnement, conserver les clones existants pour la superposition
             gsap.set(companiesList, {
               overflow: 'hidden',
               position: 'relative',
             })
-            // Créer un clone du premier item
-            const clone = targetFirst.cloneNode(true)
-            clone.dataset.clone = 'true'
-            // Marquer qu'une fermeture est en cours (donne la priorité au clone de fermeture)
-            companiesList.dataset.closing = '1'
-            // Z-index: garantir que le clone de fermeture est au-dessus de tout
-            const baseZClose = parseInt(
-              companiesList.dataset.cloneZ || '1000',
-              10
+            const priorClonesClose = companiesList.querySelectorAll(
+              '[data-clone="true"]'
             )
-            const existingCloneZ = Array.from(
-              companiesList.querySelectorAll('[data-clone="true"]')
-            ).map((n) => {
-              const z = parseInt(gsap.getProperty(n, 'zIndex')) || 0
-              return z
-            })
-            const maxExistingZ =
-              existingCloneZ.length > 0 ? Math.max(...existingCloneZ) : 0
-            const computedTopZ = Math.max(baseZClose, maxExistingZ, 1000) + 1
-            companiesList.dataset.cloneZ = String(computedTopZ)
-            const closeCloneId =
-              String(Date.now()) + Math.random().toString(36).slice(2)
-            clone.dataset.cloneId = closeCloneId
-            companiesList.dataset.latestCloneId = closeCloneId
-            gsap.set(clone, {
-              scale: 0,
-              position: 'absolute',
-              zIndex: computedTopZ,
-              transformOrigin: 'center center',
-              pointerEvents: 'none',
-              opacity: 1,
-              visibility: 'visible',
-              display: 'block',
-            })
-            companiesList.appendChild(clone)
-
-            // Positionner le clone pour remplir le conteneur (évite tout débordement visuel)
-            gsap.set(clone, {
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '100%',
-            })
-
-            // Animer le clone de scale 0 à 1 EN PARALLÈLE avec la fermeture (tween indépendant)
-            gsap.fromTo(
-              clone,
-              {
-                scale: 0,
-                willChange: 'transform',
-                autoAlpha: 1,
-                force3D: true,
-              },
-              {
-                scale: 1,
-                duration: 1.4,
-                ease: listEasing,
-                overwrite: 'auto',
-                immediateRender: true,
-                autoAlpha: 1,
-                onComplete: () => {
-                  // Après l'animation, mettre à jour les classes sur l'original
-                  const listItems =
-                    companiesList.querySelectorAll('.companies_s-item')
-                  listItems.forEach((itemEl) => {
-                    itemEl.classList.remove('is-active')
-                    itemEl.classList.remove('active-next')
-                    gsap.set(itemEl, { zIndex: 0 })
-                  })
-                  targetFirst.classList.add('is-active')
-                  gsap.set(targetFirst, { zIndex: 4 })
-
-                  // Supprimer le clone
-                  gsap.delayedCall(0, () => {
-                    clone.remove()
-                  })
-                  // Nettoyer les anciens clones obsolètes
-                  companiesList
-                    .querySelectorAll(
-                      '[data-clone="true"]:not([data-clone-id="' +
-                        closeCloneId +
-                        '"])'
-                    )
-                    .forEach((n) => n.remove())
-                  // Fin de fermeture: lever le flag
-                  delete companiesList.dataset.closing
-                },
-              }
+            if (priorClonesClose.length) {
+              priorClonesClose.forEach((n) =>
+                gsap.set(n, { zIndex: 1, pointerEvents: 'none' })
+              )
+            }
+            // Trouver l'ancien item actif dans cette liste
+            const oldActiveItem = companiesList.querySelector(
+              '.companies_s-item.is-active'
             )
-          } else {
-            // Si on a sauté le clone, s'assurer que data-item=1 reste visible et actif en fin de timeline
-            tl.add(() => {
-              const listItems =
-                companiesList.querySelectorAll('.companies_s-item')
-              listItems.forEach((itemEl) => {
-                itemEl.classList.remove('active-next')
-                gsap.set(itemEl, { zIndex: 0 })
+            if (oldActiveItem && oldActiveItem !== targetFirst) {
+              gsap.set(oldActiveItem, { zIndex: 1 })
+            }
+
+            // Si data-item="1" est déjà actif ET qu'aucun clone n'est en cours, on ne lance pas de clone
+            const hasInFlightClones =
+              companiesList.querySelector('[data-clone="true"]') != null
+            const shouldSkipClone =
+              oldActiveItem &&
+              (oldActiveItem === targetFirst ||
+                oldActiveItem.dataset.item === '1') &&
+              !hasInFlightClones
+            if (!shouldSkipClone) {
+              // Assurer le clipping et un contexte de positionnement pour le clone
+              gsap.set(companiesList, {
+                overflow: 'hidden',
+                position: 'relative',
               })
-              targetFirst.classList.add('is-active')
-              gsap.set(targetFirst, { zIndex: 4, scale: 1, opacity: 1 })
-              delete companiesList.dataset.closing
-            }, 1.4)
+              // Créer un clone du premier item
+              const clone = targetFirst.cloneNode(true)
+              clone.dataset.clone = 'true'
+              // Marquer qu'une fermeture est en cours (donne la priorité au clone de fermeture)
+              companiesList.dataset.closing = '1'
+              // Z-index: garantir que le clone de fermeture est au-dessus de tout
+              const baseZClose = parseInt(
+                companiesList.dataset.cloneZ || '1000',
+                10
+              )
+              const existingCloneZ = Array.from(
+                companiesList.querySelectorAll('[data-clone="true"]')
+              ).map((n) => {
+                const z = parseInt(gsap.getProperty(n, 'zIndex')) || 0
+                return z
+              })
+              const maxExistingZ =
+                existingCloneZ.length > 0 ? Math.max(...existingCloneZ) : 0
+              const computedTopZ = Math.max(baseZClose, maxExistingZ, 1000) + 1
+              companiesList.dataset.cloneZ = String(computedTopZ)
+              const closeCloneId =
+                String(Date.now()) + Math.random().toString(36).slice(2)
+              clone.dataset.cloneId = closeCloneId
+              companiesList.dataset.latestCloneId = closeCloneId
+              gsap.set(clone, {
+                scale: 0,
+                position: 'absolute',
+                zIndex: computedTopZ,
+                transformOrigin: 'center center',
+                pointerEvents: 'none',
+                opacity: 1,
+                visibility: 'visible',
+                display: 'block',
+              })
+              companiesList.appendChild(clone)
+
+              // Positionner le clone pour remplir le conteneur (évite tout débordement visuel)
+              gsap.set(clone, {
+                left: 0,
+                top: 0,
+                width: '100%',
+                height: '100%',
+              })
+
+              // Animer le clone de scale 0 à 1 EN PARALLÈLE avec la fermeture (tween indépendant)
+              gsap.fromTo(
+                clone,
+                {
+                  scale: 0,
+                  willChange: 'transform',
+                  autoAlpha: 1,
+                  force3D: true,
+                },
+                {
+                  scale: 1,
+                  duration: 1.4,
+                  ease: listEasing,
+                  overwrite: 'auto',
+                  immediateRender: true,
+                  autoAlpha: 1,
+                  onComplete: () => {
+                    // Après l'animation, mettre à jour les classes sur l'original
+                    const listItems =
+                      companiesList.querySelectorAll('.companies_s-item')
+                    listItems.forEach((itemEl) => {
+                      itemEl.classList.remove('is-active')
+                      itemEl.classList.remove('active-next')
+                      gsap.set(itemEl, { zIndex: 0 })
+                    })
+                    targetFirst.classList.add('is-active')
+                    gsap.set(targetFirst, { zIndex: 4 })
+
+                    // Supprimer le clone
+                    requestAnimationFrame(() => {
+                      gsap.killTweensOf(clone)
+                      if (clone.parentNode) clone.remove()
+                    })
+                    // Nettoyer les anciens clones obsolètes
+                    companiesList
+                      .querySelectorAll(
+                        '[data-clone="true"]:not([data-clone-id="' +
+                          closeCloneId +
+                          '"])'
+                      )
+                      .forEach((n) => {
+                        gsap.killTweensOf(n)
+                        n.remove()
+                      })
+                    // Fin de fermeture: lever le flag
+                    delete companiesList.dataset.closing
+                  },
+                }
+              )
+            } else {
+              // Si on a sauté le clone, s'assurer que data-item=1 reste visible et actif en fin de timeline
+              tl.add(() => {
+                const listItems =
+                  companiesList.querySelectorAll('.companies_s-item')
+                listItems.forEach((itemEl) => {
+                  itemEl.classList.remove('active-next')
+                  gsap.set(itemEl, { zIndex: 0 })
+                })
+                targetFirst.classList.add('is-active')
+                gsap.set(targetFirst, { zIndex: 4, scale: 1, opacity: 1 })
+                delete companiesList.dataset.closing
+              }, 1.4)
+            }
           }
         }
       }

@@ -195,7 +195,14 @@ function registerBarbaHooks() {
 }
 
 function killScrollTriggers() {
-  ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+  ScrollTrigger.getAll().forEach((trigger) => {
+    try {
+      if (trigger.animation) trigger.animation.kill()
+      trigger.kill()
+    } catch (error) {
+      // GSAP peut throw si un tween scrub a déjà été détruit
+    }
+  })
 }
 
 function disableScrollTriggersKeepState() {

@@ -2,6 +2,10 @@
   display: none !important;
 }
 
+.about-item_badge {
+  display: none !important;
+}
+
 .about-item {
   width: 0;
 }
@@ -535,6 +539,24 @@
 .section_certification {
   position: relative;
   z-index: 3;
+}
+
+.sticky-paragraph .sticky-line-wrap {
+  display: block;
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.sticky-paragraph .sticky-line-wrap .sticky-mask {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .section_about-test .about_headings,
