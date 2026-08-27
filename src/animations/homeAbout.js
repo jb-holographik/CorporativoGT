@@ -16,55 +16,50 @@ function collectImageUrls(img) {
   return urls
 }
 
-function preloadAboutItemImages(items) {
+function whenHeroHasLoaded(callback) {
+  const hero = document.querySelector('img.hero-img_img')
+  if (!hero || hero.complete) {
+    callback()
+    return
+  }
+
+  let done = false
+  const once = () => {
+    if (done) return
+    done = true
+    callback()
+  }
+
+  hero.addEventListener('load', once, { once: true })
+  hero.addEventListener('error', once, { once: true })
+  window.setTimeout(once, 1200)
+}
+
+function preloadAboutSectionImages(section) {
+  if (!section || section.dataset.aboutImagesPreloaded === 'true') return
+  section.dataset.aboutImagesPreloaded = 'true'
+
+  const images = section.querySelectorAll('img[src]')
   const urls = new Set()
 
-  items.forEach((item) => {
-    item.querySelectorAll('img[src]').forEach((img) => {
-      img.loading = 'eager'
-      collectImageUrls(img).forEach((url) => urls.add(url))
-      if (typeof img.decode === 'function') {
-        img.decode().catch(() => {})
-      }
-    })
+  images.forEach((img) => {
+    img.loading = 'eager'
+    img.fetchPriority = 'low'
+    img.setAttribute('fetchpriority', 'low')
+    const src = img.getAttribute('src')
+    if (src) img.src = src
+    collectImageUrls(img).forEach((url) => urls.add(url))
+    if (typeof img.decode === 'function') {
+      img.decode().catch(() => {})
+    }
   })
 
   urls.forEach((url) => {
     const preloader = new Image()
     preloader.decoding = 'async'
+    preloader.fetchPriority = 'low'
     preloader.src = url
   })
-}
-
-function preloadAboutSectionImages(section) {
-  if (!section || section.dataset.aboutImagesPreloaded === 'true') return
-
-  const start = () => {
-    if (section.dataset.aboutImagesPreloaded === 'true') return
-    section.dataset.aboutImagesPreloaded = 'true'
-
-    const items = Array.from(
-      section.querySelectorAll('.about-item, .about-item_mobile')
-    ).slice(0, 2)
-
-    preloadAboutItemImages(items)
-  }
-
-  if (typeof IntersectionObserver === 'undefined') {
-    start()
-    return
-  }
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        observer.disconnect()
-        start()
-      }
-    },
-    { rootMargin: '400px 0px' }
-  )
-  observer.observe(section)
 }
 
 // Reusable: freeze an element in place and FLIP it to match a target's bounds
@@ -186,7 +181,7 @@ export function initHomeAbout() {
 
   sections.forEach((section) => {
     if (section.classList.contains('section_about')) {
-      requestAnimationFrame(() => preloadAboutSectionImages(section))
+      whenHeroHasLoaded(() => preloadAboutSectionImages(section))
     }
     initHomeAboutSection({ section, isMobileLayout, isTabletLayout })
   })
