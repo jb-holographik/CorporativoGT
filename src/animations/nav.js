@@ -17,11 +17,13 @@ let navScrollHideInitialized = false
 let navHidden = false
 let navScrollLocked = false
 let lastScrollY = 0
+let scrollIntent = 0
 
 const TABLET_MAX_WIDTH = 991
 const NAV_FADE_DURATION = 0.35
 const NAV_HIDE_MIN_Y = 72
 const NAV_HIDE_DELTA = 10
+const NAV_SHOW_DELTA = 2
 
 export function initNavIndicator() {
   // Si le DOM a été remplacé (Barba), réinitialiser les références
@@ -286,6 +288,7 @@ function normalizeHrefPath(href) {
 function onNavScroll(y) {
   if (navScrollLocked || isNavMenuOpen()) {
     lastScrollY = y
+    scrollIntent = 0
     if (isNavMenuOpen()) showNavbarImmediate()
     return
   }
@@ -293,15 +296,26 @@ function onNavScroll(y) {
   if (y <= NAV_HIDE_MIN_Y) {
     if (navHidden) showNavbar()
     lastScrollY = y
+    scrollIntent = 0
     return
   }
 
   const delta = y - lastScrollY
   lastScrollY = y
-  if (Math.abs(delta) < NAV_HIDE_DELTA) return
+  if (delta === 0) return
 
-  if (delta > 0) hideNavbar()
-  else showNavbar()
+  if (scrollIntent !== 0 && Math.sign(delta) !== Math.sign(scrollIntent)) {
+    scrollIntent = 0
+  }
+  scrollIntent += delta
+
+  if (scrollIntent > NAV_HIDE_DELTA) {
+    hideNavbar()
+    scrollIntent = 0
+  } else if (scrollIntent < -NAV_SHOW_DELTA) {
+    showNavbar()
+    scrollIntent = 0
+  }
 }
 
 export function initNavScrollHide() {
