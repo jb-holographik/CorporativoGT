@@ -12,10 +12,14 @@ import { initHero } from './hero.js'
 import { initHomeAbout } from './homeAbout.js'
 import { initLenis, getLenis } from './lenis.js'
 import {
+  closeNavMenu,
   initNavIndicator,
-  setNavIndicatorTransitionState,
-  unlockNavIndicator,
   initNavMenuToggle,
+  initNavScrollHide,
+  setNavIndicatorTransitionState,
+  setNavScrollLock,
+  shouldUseMobileMenuTransition,
+  unlockNavIndicator,
 } from './nav.js'
 import { initSocialImpact } from './socialImpact.js'
 import { initStickyParagraph } from './stickyParagraph.js'
@@ -25,6 +29,7 @@ gsap.registerPlugin(ScrollTrigger)
 const animationModules = [
   initNavIndicator,
   initNavMenuToggle,
+  initNavScrollHide,
   initHero,
   initHomeAbout,
   initAboutHeadingTest,
@@ -157,7 +162,7 @@ function initBarbaRouter() {
   barba.init({
     preventRunning: true,
     timeout: 7000,
-    transitions: [createFadeTransition()],
+    transitions: [createMobileMenuTransition(), createFadeTransition()],
   })
 
   transitionsReady = true
@@ -171,8 +176,11 @@ function hasBarbaMarkup() {
 }
 
 function registerBarbaHooks() {
-  barba.hooks.beforeLeave(() => {
-    setNavIndicatorTransitionState(true)
+  barba.hooks.beforeLeave((data) => {
+    setNavScrollLock(true)
+    if (!shouldUseMobileMenuTransition(data?.trigger)) {
+      setNavIndicatorTransitionState(true)
+    }
     pauseSmoothScroll()
     disableScrollTriggersKeepState()
   })
@@ -188,9 +196,13 @@ function registerBarbaHooks() {
   barba.hooks.afterEnter((data) => {
     if (skipNextAfterEnterHydration) {
       skipNextAfterEnterHydration = false
+      setNavScrollLock(false)
       return
     }
     hydratePage({ reason: 'barba', next: data?.next })
+    if (!shouldUseMobileMenuTransition(data?.trigger)) {
+      setNavScrollLock(false)
+    }
   })
 }
 
@@ -265,6 +277,29 @@ function normalizePath(path) {
   const withLeadingSlash = clean.startsWith('/') ? clean : `/${clean}`
   const trimmed = withLeadingSlash.replace(/\/+$/, '')
   return trimmed || '/'
+}
+
+function createMobileMenuTransition() {
+  return {
+    name: 'mobile-menu-behind',
+    custom: ({ trigger }) => shouldUseMobileMenuTransition(trigger),
+    sync: true,
+    leave({ current }) {
+      if (current?.container) {
+        gsap.set(current.container, { display: 'none' })
+      }
+    },
+    enter({ next }) {
+      if (next?.container) {
+        gsap.set(next.container, { opacity: 1, visibility: 'visible' })
+      }
+      resetScrollTopImmediate()
+    },
+    async after() {
+      await closeNavMenu()
+      setNavScrollLock(false)
+    },
+  }
 }
 
 function createFadeTransition() {

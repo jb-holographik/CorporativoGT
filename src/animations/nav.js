@@ -1,6 +1,7 @@
 import { gsap } from 'gsap'
 
 import { customEase, listEasing } from '../utils/animationUtils.js'
+import { getLenis } from './lenis.js'
 
 let navElementRef = null
 let navListRef = null
@@ -10,9 +11,17 @@ let currentItemRef = null
 let lockedItemRef = null
 let navInitialized = false
 let menuTimelineRef = null
+let menuElementRef = null
 let wasTabletAndBelow = null
+let navScrollHideInitialized = false
+let navHidden = false
+let navScrollLocked = false
+let lastScrollY = 0
 
 const TABLET_MAX_WIDTH = 991
+const NAV_FADE_DURATION = 0.35
+const NAV_HIDE_MIN_Y = 72
+const NAV_HIDE_DELTA = 10
 
 export function initNavIndicator() {
   // Si le DOM a été remplacé (Barba), réinitialiser les références
@@ -171,12 +180,154 @@ function resolveNavIndicator() {
   return navIndicatorRef
 }
 
-function isTabletAndBelow() {
+export function isTabletAndBelow() {
   if (typeof window === 'undefined') return false
   if (typeof window.matchMedia === 'function') {
     return window.matchMedia(`(max-width: ${TABLET_MAX_WIDTH}px)`).matches
   }
   return window.innerWidth <= TABLET_MAX_WIDTH
+}
+
+function hideMenuElement() {
+  if (menuElementRef) gsap.set(menuElementRef, { display: 'none' })
+}
+
+export function isNavMenuOpen() {
+  return Boolean(menuTimelineRef && menuTimelineRef.progress() > 0.01)
+}
+
+export function shouldUseMobileMenuTransition(trigger) {
+  if (!isTabletAndBelow() || !isNavMenuOpen()) return false
+  if (!trigger || typeof trigger === 'string') return false
+  if (!(trigger instanceof Element)) return false
+  return Boolean(
+    trigger.closest('.nav__mobile__link') ||
+      trigger.closest('.menu a.nav-logo_link')
+  )
+}
+
+export function closeNavMenu() {
+  return new Promise((resolve) => {
+    const timeline = menuTimelineRef
+    if (!timeline || timeline.progress() === 0) {
+      hideMenuElement()
+      resolve()
+      return
+    }
+
+    timeline.eventCallback('onReverseComplete', () => {
+      hideMenuElement()
+      timeline.eventCallback('onReverseComplete', hideMenuElement)
+      resolve()
+    })
+    timeline.reverse()
+  })
+}
+
+export function setNavScrollLock(locked) {
+  navScrollLocked = Boolean(locked)
+  if (!navScrollLocked) showNavbarImmediate()
+}
+
+export function showNavbarImmediate() {
+  const navbar = document.querySelector('.navbar')
+  if (!navbar) return
+  navHidden = false
+  gsap.killTweensOf(navbar)
+  navbar.classList.remove('is-scroll-hidden')
+  gsap.set(navbar, { display: 'flex', visibility: 'visible', opacity: 1 })
+}
+
+function hideNavbar() {
+  const navbar = document.querySelector('.navbar')
+  if (!navbar || navHidden || navScrollLocked || isNavMenuOpen()) return
+  navHidden = true
+  gsap.killTweensOf(navbar)
+  gsap.to(navbar, {
+    opacity: 0,
+    duration: NAV_FADE_DURATION,
+    ease: 'power2.out',
+    onComplete: () => {
+      if (!navHidden) return
+      navbar.classList.add('is-scroll-hidden')
+      gsap.set(navbar, { display: 'none' })
+    },
+  })
+}
+
+function showNavbar() {
+  const navbar = document.querySelector('.navbar')
+  if (!navbar || !navHidden) return
+  navHidden = false
+  gsap.killTweensOf(navbar)
+  navbar.classList.remove('is-scroll-hidden')
+  gsap.set(navbar, { display: 'flex', visibility: 'visible' })
+  gsap.fromTo(
+    navbar,
+    { opacity: 0 },
+    { opacity: 1, duration: NAV_FADE_DURATION, ease: 'power2.out' }
+  )
+}
+
+function normalizeHrefPath(href) {
+  if (!href || href === '#') return ''
+  try {
+    const path = new URL(href, window.location.origin).pathname
+    const stripped = path
+      .replace(/\/index\.html$/i, '/')
+      .replace(/\.html$/i, '')
+      .replace(/\/+$/, '')
+    return stripped || '/'
+  } catch (error) {
+    return href
+  }
+}
+
+function onNavScroll(y) {
+  if (navScrollLocked || isNavMenuOpen()) {
+    lastScrollY = y
+    if (isNavMenuOpen()) showNavbarImmediate()
+    return
+  }
+
+  if (y <= NAV_HIDE_MIN_Y) {
+    if (navHidden) showNavbar()
+    lastScrollY = y
+    return
+  }
+
+  const delta = y - lastScrollY
+  lastScrollY = y
+  if (Math.abs(delta) < NAV_HIDE_DELTA) return
+
+  if (delta > 0) hideNavbar()
+  else showNavbar()
+}
+
+export function initNavScrollHide() {
+  showNavbarImmediate()
+  lastScrollY = window.scrollY || 0
+  if (navScrollHideInitialized) return
+
+  const navbar = document.querySelector('.navbar')
+  if (!navbar) return
+  navScrollHideInitialized = true
+
+  const lenis = getLenis()
+  if (lenis && typeof lenis.on === 'function') {
+    lenis.on('scroll', (event) => {
+      const y =
+        typeof event?.scroll === 'number' ? event.scroll : window.scrollY
+      onNavScroll(y)
+    })
+    return
+  }
+
+  window.addEventListener(
+    'scroll',
+    () => onNavScroll(window.scrollY || window.pageYOffset || 0),
+    { passive: true }
+  )
 }
 
 export function initNavMenuToggle() {
@@ -188,6 +339,7 @@ export function initNavMenuToggle() {
 
   if (menuTimelineRef) return
 
+  menuElementRef = menuElement
   gsap.set(menuElement, { width: '0%', display: 'none' })
 
   const timeline = gsap.timeline({
@@ -200,12 +352,11 @@ export function initNavMenuToggle() {
     onStart: () => gsap.set(menuElement, { display: 'block' }),
   })
 
-  timeline.eventCallback('onReverseComplete', () =>
-    gsap.set(menuElement, { display: 'none' })
-  )
+  timeline.eventCallback('onReverseComplete', hideMenuElement)
 
   const handleOpen = (event) => {
     event?.preventDefault()
+    showNavbarImmediate()
     timeline.play()
   }
 
@@ -214,8 +365,15 @@ export function initNavMenuToggle() {
     timeline.reverse()
   }
 
-  const handleMobileLinkClick = () => {
-    if (isTabletAndBelow()) timeline.reverse()
+  const handleMobileLinkClick = (event) => {
+    if (!isTabletAndBelow()) return
+    const href = event.currentTarget.getAttribute('href')
+    const nextPath = normalizeHrefPath(href)
+    const currentPath = normalizeHrefPath(window.location.pathname || '/')
+    if (!nextPath || nextPath === currentPath) {
+      event.preventDefault()
+      timeline.reverse()
+    }
   }
 
   openTrigger.addEventListener('click', handleOpen)

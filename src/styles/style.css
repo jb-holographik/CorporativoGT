@@ -625,11 +625,26 @@
   }
 }
 
+.menu {
+  z-index: 10000;
+}
+
+.navbar.is-scroll-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @media screen and (max-width: 991px) {
   .navbar {
     display: flex !important;
     visibility: visible !important;
-    opacity: 1 !important;
+  }
+
+  .navbar.is-scroll-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
   .navbar .nav {
