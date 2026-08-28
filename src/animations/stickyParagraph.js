@@ -154,7 +154,9 @@ function setupStickyParagraph(sticky) {
   masks.forEach((mask, index) => {
     const line = lines[index]
     const duration = line.wordCount / totalWords
-    const fromWidth = line.width * 1.1
+    const gradient = mask.querySelector('.sticky_gradient')
+    const extra = (gradient?.getBoundingClientRect().width || 0) + 2
+    const fromWidth = line.width + extra
     gsap.set(mask, { width: fromWidth })
     tl.fromTo(
       mask,

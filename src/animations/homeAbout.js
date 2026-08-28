@@ -95,6 +95,10 @@ export function freezeAndFlipToTarget({
       itemEl.querySelector('img')
     if (srcImg) {
       const img = srcImg.cloneNode(true)
+      img.removeAttribute('srcset')
+      img.removeAttribute('sizes')
+      const decodedSrc = srcImg.currentSrc || srcImg.getAttribute('src')
+      if (decodedSrc) img.setAttribute('src', decodedSrc)
       inner.appendChild(img)
       gsap.set(img, {
         width: '100%',
@@ -491,9 +495,7 @@ function initHomeAboutSection({ section, isMobileLayout, isTabletLayout }) {
         const result = freezeAndFlipToTarget({
           itemEl: flipItemEl,
           targetEl: null,
-          sourceImageEl: isMobileLayout
-            ? itemImages[itemImages.length - 1]
-            : null,
+          sourceImageEl: itemImages[itemImages.length - 1],
         })
         const overlay = result?.element
         if (!overlay) return
