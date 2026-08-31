@@ -9,6 +9,38 @@ html.lenis body {
   height: auto;
 }
 
+/* Sticky plein écran : 100svh = petit viewport (barre visible).
+   Une fois la barre masquée, il faut le grand viewport. */
+.about-wrap,
+.our-mission,
+.about_heading-wrap {
+  height: 100vh;
+  height: 100lvh;
+}
+
+.about-wrap_carousel {
+  height: 100vh;
+  height: 100lvh;
+}
+
+.section.section_our-mission,
+.section.section_corporate {
+  height: 300vh;
+  height: 300lvh;
+}
+
+.about-carousel_mobile {
+  height: 200vh;
+  height: 200lvh;
+}
+
+@media screen and (max-width: 991px) {
+  .about-wrap_carousel {
+    height: 200vh;
+    height: 200lvh;
+  }
+}
+
 .about-item_badge {
   display: none !important;
 }
@@ -81,7 +113,8 @@ html.lenis body {
 .corporate-sticky-wrap {
   position: sticky;
   top: 0;
-  height: 100svh;
+  height: 100vh;
+  height: 100lvh;
 }
 
 .section.section_corporate .corporate {
@@ -152,8 +185,10 @@ html.lenis body {
   display: grid;
   position: sticky;
   top: 0;
-  height: 100svh;
-  max-height: 100svh;
+  height: 100vh;
+  height: 100lvh;
+  max-height: 100vh;
+  max-height: 100lvh;
   grid-template-rows: auto minmax(0, 1fr) auto;
   justify-items: center;
   align-items: stretch;
