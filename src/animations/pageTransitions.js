@@ -673,15 +673,16 @@ function computeClipTargets() {
     ) || 16
   const emToPx = (em) => em * rootFontSize
 
+  const visual = typeof window.visualViewport !== 'undefined' ? window.visualViewport : null
   const vw =
-    document.documentElement.clientWidth ||
-    window.visualViewport?.width ||
+    visual?.width ||
     window.innerWidth ||
+    document.documentElement.clientWidth ||
     1440
   const vh =
-    document.documentElement.clientHeight ||
-    window.visualViewport?.height ||
+    visual?.height ||
     window.innerHeight ||
+    document.documentElement.clientHeight ||
     900
 
   const midW = emToPx(22.5)

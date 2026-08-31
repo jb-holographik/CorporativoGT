@@ -669,6 +669,22 @@ html.lenis body {
 
 .menu {
   z-index: 10000;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100%;
+  bottom: 0;
+}
+
+.menu__inner {
+  height: 100%;
+  min-height: 100%;
+}
+
+.transition {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100%;
+  inset: 0;
 }
 
 .navbar.is-scroll-hidden {
