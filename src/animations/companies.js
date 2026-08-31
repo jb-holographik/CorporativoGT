@@ -257,6 +257,30 @@ export function initCompanies() {
     }
     if (smallStrip) gsap.set(smallStrip, { yPercent: 103, y: 0, x: 0 })
 
+    const hoverImages = item.querySelectorAll(
+      '.item-image_img, .item-image_img-s'
+    )
+    const prefersFineHover =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    gsap.set(hoverImages, { scale: 1, transformOrigin: '50% 50%' })
+
+    const setItemImageHoverScale = (hovered) => {
+      if (!prefersFineHover) return
+      if (expanded || isAnimating) return
+      gsap.to(hoverImages, {
+        scale: hovered ? 1.1 : 1,
+        duration: 0.75,
+        ease: listEasing,
+        overwrite: 'auto',
+      })
+    }
+
+    if (prefersFineHover) {
+      item.addEventListener('mouseenter', () => setItemImageHoverScale(true))
+      item.addEventListener('mouseleave', () => setItemImageHoverScale(false))
+    }
+
     // Capturer la largeur et hauteur initiales du .item-image.is-v pour les restaurer à la fermeture
     const largeImageInit = wrapper.querySelector('.item-image.is-v')
     let initialLargeImageWidth = 'auto'
@@ -465,7 +489,17 @@ export function initCompanies() {
         onComplete: () => {
           isAnimating = false
           expanded = !expanded
-          if (!isExpanding) activeImageIndex = 0
+          if (!isExpanding) {
+            activeImageIndex = 0
+            if (prefersFineHover && item.matches(':hover')) {
+              gsap.to(hoverImages, {
+                scale: 1.1,
+                duration: 0.75,
+                ease: listEasing,
+                overwrite: 'auto',
+              })
+            }
+          }
           refreshScrollContext()
         },
       })
@@ -473,6 +507,21 @@ export function initCompanies() {
 
       // S'assurer que le container ne déborde pas pendant l'animation
       tl.set(item, { overflow: 'hidden' }, 0)
+
+      if (isExpanding && hoverImages.length) {
+        // power2.out : descale tout au long de l'ouverture.
+        // listEasing (ease-in) gardait le 1.1 puis tombait d'un coup à la fin.
+        tl.to(
+          hoverImages,
+          {
+            scale: 1,
+            duration: 1.4,
+            ease: 'power2.out',
+            overwrite: 'auto',
+          },
+          0
+        )
+      }
 
       if (isTabletOrMobile) {
         tl.fromTo(
@@ -615,6 +664,20 @@ export function initCompanies() {
               xPercent: 0,
               yPercent: 0,
             })
+            const expansionCloneImgs = expansionClone.querySelectorAll(
+              '.item-image_img, .item-image_img-s'
+            )
+            gsap.set(expansionCloneImgs, { transformOrigin: '50% 50%' })
+            tl.to(
+              expansionCloneImgs,
+              {
+                scale: 1,
+                duration: 1.4,
+                ease: 'power2.out',
+                overwrite: 'auto',
+              },
+              0
+            )
             tl.set(largeImage, { opacity: 0 }, 0)
             tl.to(
               expansionClone,
@@ -650,6 +713,12 @@ export function initCompanies() {
           )
           if (expansionClone) {
             tl.add(() => {
+              gsap.set(
+                largeImage.querySelectorAll(
+                  '.item-image_img, .item-image_img-s'
+                ),
+                { scale: 1, transformOrigin: '50% 50%' }
+              )
               gsap.set(largeImage, { opacity: 1 })
               expansionClone.remove()
               if (firstPreviewClone) firstPreviewClone.remove()
