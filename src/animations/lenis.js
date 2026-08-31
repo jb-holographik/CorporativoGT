@@ -1,6 +1,7 @@
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
+import 'lenis/dist/lenis.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -9,15 +10,20 @@ let lenisInstance = null
 export function initLenis(options = {}) {
   if (typeof window === 'undefined' || lenisInstance) return lenisInstance
 
+  // syncTouch: false = scroll natif au touch, pour que la barre du browser
+  // (Safari / Chrome mobile) puisse se cacher au scroll.
   const lenis = new Lenis({
+    wrapper: window,
+    content: document.documentElement,
     lerp: 0.12,
     smoothWheel: true,
-    smoothTouch: false,
+    syncTouch: false,
     wheelMultiplier: 0.51,
-    touchMultiplier: 1.5,
+    touchMultiplier: 1,
     orientation: 'vertical',
     gestureOrientation: 'vertical',
-    // allow user overrides
+    autoRaf: false,
+    overscroll: true,
     ...options,
   })
 

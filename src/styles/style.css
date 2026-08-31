@@ -2,6 +2,13 @@
   display: none !important;
 }
 
+/* Lenis : le html { height: 100vh } Webflow bloquerait le scroll natif
+   et empêcherait la barre de navigation mobile de se cacher. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
 .about-item_badge {
   display: none !important;
 }

@@ -15,16 +15,18 @@ export const ctaHoverEase = CustomEase.get('ctaHover')
 CustomEase.create('listEasing', '0.6, 0, 0, 1')
 export const listEasing = CustomEase.get('listEasing')
 
-// Recharge la page si le viewport change et force un retour immédiat en haut
+// Recharge la page si la largeur change (breakpoint / orientation).
+// On ignore les variations de hauteur : sur mobile, innerHeight bouge
+// quand la barre du browser se cache, et un reload la ferait rester visible.
 export const reloadOnViewportChange = () => {
   if (typeof window === 'undefined') return
 
   window.history.scrollRestoration = 'manual'
-  let lastViewport = `${window.innerWidth}x${window.innerHeight}`
+  let lastWidth = window.innerWidth
 
   const handleViewportChange = () => {
-    const nextViewport = `${window.innerWidth}x${window.innerHeight}`
-    if (nextViewport === lastViewport) return
+    const nextWidth = window.innerWidth
+    if (nextWidth === lastWidth) return
 
     window.removeEventListener('resize', handleViewportChange)
     window.removeEventListener('orientationchange', handleViewportChange)
